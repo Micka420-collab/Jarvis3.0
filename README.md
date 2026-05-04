@@ -43,7 +43,8 @@ Jarvis 3.0 est un assistant inspiré du **J.A.R.V.I.S. d'Iron Man**, conçu pour
 | **Voix** | Wake-word, STT streaming partials, VAD silero, **conversation duplex avec barge-in** (interruption), TTS streaming `Piper`/`ElevenLabs` |
 | **Avatar** | React + Three.js, **GLTF haute-fidélité avec 52 blendshapes ARKit** (fallback icosaèdre), idle motion + clignement, waveform live |
 | **LLM** | Routeur multi-provider Ollama / Claude / Mistral · **streaming token → phrase-par-phrase → TTS** (latence perçue <500 ms) · tool calling |
-| **Skills** | Système de **plugins hot-reload** (POST `/skills/reload`) · 5 builtins : time, weather, briefing, routines, presence, explain |
+| **Skills** | Système de **plugins hot-reload** (POST `/skills/reload`) · 7 builtins : time, weather, briefing, routines, presence, explain, **agents** |
+| **Agents externes** | Délégation à **Hermes Agent** (Nous Research) et **OpenClaw** : navigation, fichiers, OS, GUI, 50+ services en ligne. Voix-print obligatoire. |
 | **Mémoire** | Vectorielle (`Qdrant` + bge-m3) + faits structurés (`Postgres pgvector`) |
 | **Profils familiaux** | Multi-utilisateurs avec rôles (owner/adult/teen/child/guest), permissions JSON, voix-print et visage par membre |
 | **Voix-print** | ECAPA-TDNN 192-d, **multi-membres**, challenge phrase dynamique, **liveness AASIST anti-deepfake**, cooldown admin |
@@ -267,6 +268,8 @@ Détail du modèle voix-print : [`docs/voiceprint.md`](docs/voiceprint.md).
 - [`docs/phases.md`](docs/phases.md) — détail livraison par phase + tests E2E
 - [`docs/k3s.md`](docs/k3s.md) — déploiement Kubernetes / k3s
 - [`docs/raspberry-pi.md`](docs/raspberry-pi.md) — installation et perfs sur Pi 4 / Pi 5
+- [`docs/skills.md`](docs/skills.md) — anatomie d'un plugin et hot-reload
+- [`docs/agents.md`](docs/agents.md) — délégation à Hermes / OpenClaw / MCP
 
 ---
 
@@ -274,6 +277,7 @@ Détail du modèle voix-print : [`docs/voiceprint.md`](docs/voiceprint.md).
 
 ### Récemment livré
 
+- **Délégation à des agents autonomes** : Hermes (NousResearch) + OpenClaw + MCP générique. Jarvis peut leur confier des tâches PC réelles (browser, fichiers, GUI, services en ligne).
 - **Profils utilisateurs familiaux** multi-membres (rôles, permissions, voix-print et visage par membre)
 - **Skills system** extensible avec hot-reload (5 builtins : time, weather, briefing, routines, presence, explain)
 - **LLM streaming → TTS phrase-par-phrase** (chunker FR + abréviations, latence perçue <500 ms)

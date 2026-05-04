@@ -324,6 +324,31 @@ services:
     networks:
       - jarvis-net
 
+  agents:
+    build:
+      context: ./services/agents
+      dockerfile: Dockerfile
+      args:
+        # `make build-agents-full` pour activer ces deux flags
+        INSTALL_HERMES: "${INSTALL_HERMES:-false}"
+        INSTALL_OPENCLAW: "${INSTALL_OPENCLAW:-false}"
+    container_name: jarvis-agents
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./services/agents/app:/app/app:ro
+      - ./services/_shared:/app/_shared:ro
+      # Exemple : monter le home de l'owner pour que les agents puissent lire ses fichiers.
+      # ATTENTION SÉCURITÉ : voir docs/agents.md
+      # - /home/${OWNER_USERNAME}:/home/owner
+    networks:
+      - jarvis-net
+
   vision:
     build:
       context: ./services/vision

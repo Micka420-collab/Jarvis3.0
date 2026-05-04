@@ -88,6 +88,13 @@ up-rpi:
 up-rpi-vision:
 	$(COMPOSE) -f docker-compose.yml -f docker-compose.rpi.yml --profile vision-rpi up -d
 
+build-agents-full:
+	@echo "Build du service agents AVEC Hermes + OpenClaw préinstallés (~1 Go)"
+	$(COMPOSE) build --build-arg INSTALL_HERMES=true --build-arg INSTALL_OPENCLAW=true agents
+
+list-agents:
+	$(COMPOSE) exec agents curl -fsS http://localhost:8005/agents | python3 -m json.tool
+
 build-multiarch:
 	@echo "Build multi-arch (amd64 + arm64) — nécessite buildx + login GHCR"
 	docker buildx create --use --name jarvis-builder 2>/dev/null || true
