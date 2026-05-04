@@ -11,6 +11,7 @@ export function useVoiceWS() {
   const [recording, setRecording] = useState(false);
   const [speaking, setSpeaking] = useState(false);
   const [viseme, setViseme] = useState<string>("sil");
+  const [partial, setPartial] = useState<string>("");
   const [lines, setLines] = useState<Line[]>([]);
 
   const append = (line: Line) => setLines((prev) => [...prev, line].slice(-50));
@@ -27,6 +28,9 @@ export function useVoiceWS() {
       const msg = JSON.parse(e.data);
       if (msg.type === "transcript") {
         append({ who: "user", text: msg.text, ts: Date.now() });
+        setPartial("");
+      } else if (msg.type === "transcript_partial") {
+        setPartial(msg.text);
       } else if (msg.type === "tts_chunk") {
         if (msg.pcm_b64) playerRef.current?.pushChunk(msg.pcm_b64);
         if (msg.viseme) setViseme(msg.viseme);
@@ -74,6 +78,7 @@ export function useVoiceWS() {
     recording,
     speaking,
     viseme,
+    partial,
     lines,
     appendBotLine: (text: string) => append({ who: "bot", text, ts: Date.now() }),
     startRecording,

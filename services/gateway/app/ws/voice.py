@@ -32,9 +32,11 @@ from _shared.bus import EventBus  # noqa: E402
 from _shared.events import (  # noqa: E402
     STREAM_VOICE_AUDIO_CHUNK,
     STREAM_VOICE_TRANSCRIPT,
+    STREAM_VOICE_TRANSCRIPT_PARTIAL,
     STREAM_TTS_AUDIO_CHUNK,
     VoiceAudioChunk,
     VoiceTranscriptReady,
+    VoiceTranscriptPartial,
     TtsAudioChunk,
 )
 
@@ -58,6 +60,19 @@ async def voice_ws(ws: WebSocket) -> None:
                 continue
             await ws.send_json({"type": "transcript", "text": ev.text, "lang": ev.lang})
 
+    async def forward_partials() -> None:
+        async for _id, ev in bus.consume(
+            STREAM_VOICE_TRANSCRIPT_PARTIAL,
+            f"gw-partial-{session_id}",
+            "gw",
+            VoiceTranscriptPartial,
+        ):
+            if ev.session_id != session_id:
+                continue
+            await ws.send_json(
+                {"type": "transcript_partial", "text": ev.text, "lang": ev.lang}
+            )
+
     async def forward_tts() -> None:
         async for _id, ev in bus.consume(
             STREAM_TTS_AUDIO_CHUNK, f"gw-tts-{session_id}", "gw", TtsAudioChunk
@@ -75,6 +90,7 @@ async def voice_ws(ws: WebSocket) -> None:
             )
 
     transcripts_task = asyncio.create_task(forward_transcripts())
+    partials_task = asyncio.create_task(forward_partials())
     tts_task = asyncio.create_task(forward_tts())
 
     try:
@@ -117,6 +133,7 @@ async def voice_ws(ws: WebSocket) -> None:
         pass
     finally:
         transcripts_task.cancel()
+        partials_task.cancel()
         tts_task.cancel()
         await bus.close()
         log.info("voice WS close session=%s", session_id)

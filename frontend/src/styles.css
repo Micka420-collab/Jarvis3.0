@@ -46,6 +46,21 @@ main {
   overflow: hidden;
 }
 
+@media (max-width: 768px) {
+  main {
+    grid-template-columns: 1fr;
+    grid-template-rows: 45vh 1fr;
+  }
+  header { padding: 0.6rem 1rem; }
+  footer { padding: 0.6rem 1rem; flex-wrap: wrap; }
+  footer .text { width: 100%; order: 3; }
+}
+
+.line.partial em {
+  font-style: italic;
+  color: rgba(216, 226, 240, 0.55);
+}
+
 .avatar-wrap {
   background: rgba(0,0,0,0.25);
   border-radius: 16px;

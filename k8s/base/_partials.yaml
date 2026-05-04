@@ -1,0 +1,14 @@
+# Patron commun envFrom pour tous les services applicatifs.
+# Importé par chaque Deployment via merge yaml.
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: jarvis-env-doc
+  namespace: jarvis
+data:
+  README: |
+    Tous les Deployments applicatifs utilisent :
+      envFrom:
+        - configMapRef:  { name: jarvis-config }
+        - secretRef:     { name: jarvis-secrets }

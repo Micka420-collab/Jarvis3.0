@@ -17,4 +17,17 @@ fi
 
 echo "→ ECAPA-TDNN sera téléchargé par SpeechBrain au 1er lancement vers /models/ecapa"
 
+# --- AASIST anti-spoofing (optionnel) ---
+mkdir -p "$MODELS_DIR/aasist"
+AASIST_URL="${AASIST_URL:-https://huggingface.co/cuongdang/aasist-onnx/resolve/main/aasist.onnx}"
+if [[ ! -f "$MODELS_DIR/aasist/aasist.onnx" ]]; then
+  echo "→ AASIST anti-deepfake : $AASIST_URL"
+  if curl -fL -o "$MODELS_DIR/aasist/aasist.onnx" "$AASIST_URL"; then
+    echo "  ✅ AASIST téléchargé"
+  else
+    rm -f "$MODELS_DIR/aasist/aasist.onnx"
+    echo "  ⚠️  AASIST non téléchargé (URL HF privée ou hors-ligne) — liveness désactivée"
+  fi
+fi
+
 echo "✅ Modèles prêts dans $MODELS_DIR"

@@ -1,0 +1,91 @@
+# Override Raspberry Pi (ARM64).
+# Usage : `docker compose -f docker-compose.yml -f docker-compose.rpi.yml up -d`
+#         (ou `make up-rpi`)
+#
+# Adaptations :
+#  - Whisper "tiny" + int8, langue forcée (pas de détection auto pour économiser RAM)
+#  - Llama 3.2 1B (fits in 2 Go RAM avec quant Q4)
+#  - Voix Piper "low" plus rapide
+#  - Pas de Frigate ni Ollama par défaut (profile pour les activer)
+#  - Limites mémoire pour éviter le swap-thrash sur Pi 4 (4 Go)
+
+services:
+  # Désactive l'image lourde Ollama : sur Pi, on appelle Anthropic ou Mistral cloud.
+  # Pour LLM local, dé-commenter :
+  #   profiles: ["llm-local"]
+  ollama:
+    profiles: ["llm-local"]
+
+  voice:
+    environment:
+      WHISPER_MODEL: tiny
+      WHISPER_DEVICE: cpu
+      WHISPER_COMPUTE_TYPE: int8
+      PIPER_VOICE: fr_FR-siwis-low
+      WAKE_WORD: jarvis
+      STT_PARTIAL_EVERY_MS: "1200"   # un peu moins agressif sur Pi
+    deploy:
+      resources:
+        limits: { memory: 1500m }
+
+  llm:
+    environment:
+      LLM_PROVIDER: anthropic        # par défaut cloud sur Pi (cervelle distante)
+      LLM_MODEL: claude-haiku-4-5-20251001
+    deploy:
+      resources:
+        limits: { memory: 600m }
+
+  orchestrator:
+    deploy:
+      resources:
+        limits: { memory: 400m }
+
+  memory:
+    environment:
+      EMBED_MODEL: BAAI/bge-small-en-v1.5  # 33 M params au lieu de bge-m3 (2 Go)
+    deploy:
+      resources:
+        limits: { memory: 800m }
+
+  iot:
+    deploy:
+      resources:
+        limits: { memory: 400m }
+
+  security:
+    deploy:
+      resources:
+        limits: { memory: 200m }
+
+  # Vision désactivée par défaut sur Pi 4. Sur Pi 5 + Coral USB, dé-commenter :
+  vision:
+    profiles: ["vision-rpi"]
+
+  frigate:
+    profiles: ["vision-rpi"]
+
+  postgres:
+    deploy:
+      resources:
+        limits: { memory: 600m }
+
+  qdrant:
+    deploy:
+      resources:
+        limits: { memory: 600m }
+
+  redis:
+    deploy:
+      resources:
+        limits: { memory: 200m }
+
+  gateway:
+    deploy:
+      resources:
+        limits: { memory: 400m }
+
+  frontend:
+    deploy:
+      resources:
+        limits: { memory: 100m }

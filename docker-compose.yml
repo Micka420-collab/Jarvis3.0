@@ -107,6 +107,32 @@ services:
       - jarvis-net
       - proxmox_lan
 
+  zigbee2mqtt:
+    image: koenkk/zigbee2mqtt:latest
+    container_name: jarvis-zigbee2mqtt
+    restart: unless-stopped
+    profiles: ["zigbee"]
+    depends_on:
+      - mosquitto
+    volumes:
+      - ./infra/zigbee2mqtt/configuration.yaml:/app/data/configuration.yaml
+      - ./infra/zigbee2mqtt/data:/app/data
+      - /run/udev:/run/udev:ro
+    devices:
+      # alias udev recommandé : /dev/ttyUSB-zigbee
+      - /dev/ttyUSB-zigbee:/dev/ttyUSB-zigbee
+    environment:
+      TZ: "${TZ:-Europe/Paris}"
+    networks:
+      - jarvis-net
+      - proxmox_lan
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.z2m.rule=Host(`z2m.${JARVIS_DOMAIN}`)
+      - traefik.http.routers.z2m.entrypoints=websecure
+      - traefik.http.routers.z2m.tls=true
+      - traefik.http.services.z2m.loadbalancer.server.port=8080
+
   # =====================================================================
   # LLM local (Ollama)
   # =====================================================================

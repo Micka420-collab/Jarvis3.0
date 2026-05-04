@@ -19,3 +19,5 @@ silero-vad==5.1
 httpx==0.27.2
 # Postgres (lecture voiceprint)
 asyncpg==0.29.0
+# Anti-spoofing (AASIST ONNX export)
+onnxruntime==1.19.2

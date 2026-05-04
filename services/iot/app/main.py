@@ -34,6 +34,7 @@ from _shared.events import (  # noqa: E402
 from .ha_bridge import HABridge  # noqa: E402
 from .mqtt_bridge import MQTTBridge  # noqa: E402
 from .serial_bridge import SerialBridge  # noqa: E402
+from .zigbee_bridge import Z2MBridge  # noqa: E402
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s — %(message)s")
 log = logging.getLogger("iot")
@@ -72,10 +73,22 @@ async def lifespan(app: FastAPI):
     app.state.mqtt = MQTTBridge()
     app.state.ha = HABridge()
     app.state.serial = SerialBridge(on_state=on_serial_state)
+    app.state.zigbee = Z2MBridge()
     try:
         await app.state.serial.open()
     except Exception as e:
         log.warning("serial init KO (%s) — bridge désactivé", e)
+
+    async def on_zigbee_state(device_id: str, payload: dict) -> None:
+        await emit_state(device_id, payload, "mqtt")  # transport "zigbee2mqtt" mappé sur mqtt event
+
+    async def _zigbee_subscriber():
+        try:
+            await app.state.zigbee.subscribe_states(on_zigbee_state)
+        except Exception as e:
+            log.warning("Z2M subscribe loop arrêtée: %s", e)
+
+    app.state.zigbee_task = asyncio.create_task(_zigbee_subscriber())
 
     # MQTT subscribe pour tous les devices avec state_topic
     mqtt_topics: list[tuple[str, str]] = []
@@ -144,6 +157,10 @@ async def command(req: CommandRequest) -> dict:
         )
         result = {"status": "sent", "transport": "serial"}
 
+    elif transport == "zigbee2mqtt":
+        await app.state.zigbee.command(cfg["friendly_name"], req.action, req.params)
+        result = {"status": "sent", "transport": "zigbee2mqtt"}
+
     else:
         raise HTTPException(status_code=500, detail=f"transport inconnu: {transport}")
 
@@ -172,6 +189,44 @@ async def state(device_id: str = Query(...)) -> dict:
     if dev["transport"] == "homeassistant":
         return await app.state.ha.get_state(dev["config"]["entity_id"])
     return {"state": "unknown", "note": "implémentation à compléter pour ce transport"}
+
+
+@app.post("/discover/zigbee")
+async def discover_zigbee() -> dict:
+    """Récupère la liste Z2M et upsert dans la table devices."""
+    entities = await app.state.zigbee.list_devices()
+    pool = await asyncpg.create_pool(
+        host=os.getenv("POSTGRES_HOST", "postgres"),
+        port=int(os.getenv("POSTGRES_PORT", "5432")),
+        database=os.getenv("POSTGRES_DB", "jarvis"),
+        user=os.getenv("POSTGRES_USER", "jarvis"),
+        password=os.getenv("POSTGRES_PASSWORD", ""),
+        min_size=1,
+        max_size=2,
+    )
+    inserted = 0
+    try:
+        async with pool.acquire() as conn:
+            for e in entities:
+                await conn.execute(
+                    """
+                    INSERT INTO devices(id, name, transport, config, requires_admin)
+                    VALUES($1, $2, $3, $4::jsonb, $5)
+                    ON CONFLICT (id) DO UPDATE
+                       SET name = EXCLUDED.name,
+                           config = EXCLUDED.config,
+                           requires_admin = EXCLUDED.requires_admin
+                    """,
+                    e["id"],
+                    e["name"],
+                    e["transport"],
+                    __import__("json").dumps(e["config"]),
+                    e["requires_admin"],
+                )
+                inserted += 1
+    finally:
+        await pool.close()
+    return {"discovered": inserted}
 
 
 @app.post("/discover/ha")

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Avatar3D } from "./components/Avatar3D";
+import { AvatarGLTF } from "./components/AvatarGLTF";
 import { Waveform } from "./components/Waveform";
 import { useVoiceWS } from "./hooks/useVoiceWS";
 
@@ -24,16 +24,23 @@ export default function App() {
 
       <main>
         <div className="avatar-wrap">
-          <Avatar3D speaking={v.speaking} viseme={v.viseme} />
+          <AvatarGLTF speaking={v.speaking} viseme={v.viseme} />
         </div>
         <div className="transcript">
-          {v.lines.length === 0 && <div className="status">Dis "bonjour" ou tape un message…</div>}
+          {v.lines.length === 0 && !v.partial && (
+            <div className="status">Dis "bonjour" ou tape un message…</div>
+          )}
           {v.lines.map((l, i) => (
             <div key={i} className={`line ${l.who}`}>
               <strong>{l.who === "user" ? "Toi" : l.who === "alert" ? "Argus" : "Jarvis"}</strong>{" "}
               · {l.text}
             </div>
           ))}
+          {v.partial && (
+            <div className="line partial">
+              <strong>Toi</strong> · <em style={{ opacity: 0.55 }}>{v.partial}…</em>
+            </div>
+          )}
         </div>
       </main>
 

@@ -1,0 +1,41 @@
+# Zigbee2MQTT — configuration de référence
+# https://www.zigbee2mqtt.io/guide/configuration/
+
+homeassistant: false                # MQTT discovery désactivé : Jarvis fait sa propre découverte
+permit_join: false                  # à activer ponctuellement pour appairer
+
+mqtt:
+  base_topic: zigbee2mqtt
+  server: mqtt://mosquitto:1883
+  user: jarvis
+  password: change_me               # → utiliser un secret au runtime
+  client_id: zigbee2mqtt
+  reject_unauthorized: true
+
+serial:
+  port: /dev/ttyUSB-zigbee          # alias udev recommandé
+  adapter: auto                     # auto-détection (zstack, deconz, ezsp...)
+
+# Frontend web Z2M (sur 8080) — accessible derrière Traefik si besoin
+frontend:
+  enabled: true
+  port: 8080
+
+availability:
+  active:
+    timeout: 10
+  passive:
+    timeout: 1500
+
+# Logs
+advanced:
+  log_level: info
+  log_output:
+    - console
+  network_key: GENERATE             # remplacer par une clé fixe en prod
+  pan_id: GENERATE
+  ext_pan_id: GENERATE
+
+# Persistance compatible Z2M (devices et groupes)
+device_options:
+  legacy: false

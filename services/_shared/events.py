@@ -19,7 +19,9 @@ from pydantic import BaseModel, Field
 STREAM_VOICE_AUDIO_CHUNK = "voice.audio.chunk"
 STREAM_VOICE_UTTERANCE = "voice.utterance.detected"
 STREAM_VOICE_TRANSCRIPT = "voice.transcript.ready"
+STREAM_VOICE_TRANSCRIPT_PARTIAL = "voice.transcript.partial"
 STREAM_VOICE_IDENTITY = "voice.identity.verified"
+STREAM_VOICE_LIVENESS = "voice.liveness.checked"
 STREAM_INTENT_REQUEST = "intent.command.requested"
 STREAM_INTENT_RESPONSE = "intent.response.ready"
 STREAM_TTS_AUDIO_CHUNK = "tts.audio.chunk"
@@ -69,12 +71,30 @@ class VoiceTranscriptReady(BaseEvent):
     confidence: float = 0.0
 
 
+class VoiceTranscriptPartial(BaseEvent):
+    """Hypothèse de transcript en cours, raffinée à chaque chunk."""
+
+    session_id: str
+    text: str
+    lang: str = "fr"
+    is_stable: bool = False  # True si la phrase est stable (à figer dans l'UI)
+
+
 class VoiceIdentityVerified(BaseEvent):
     session_id: str
     user_id: str | None  # None = inconnu
     similarity: float
     is_owner: bool
     challenge_passed: bool | None = None
+
+
+class VoiceLivenessChecked(BaseEvent):
+    """Score AASIST anti-deepfake. score ∈ [0,1], plus haut = plus humain."""
+
+    session_id: str
+    score: float
+    is_human: bool
+    threshold: float
 
 
 # ---------------------------------------------------------------------------

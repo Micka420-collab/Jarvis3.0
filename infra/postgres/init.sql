@@ -43,12 +43,12 @@ CREATE TABLE IF NOT EXISTS auth_events (
 CREATE INDEX IF NOT EXISTS auth_events_ts_idx ON auth_events(ts DESC);
 
 -- ---------------------------------------------------------------------------
--- Devices IoT (registre unifié MQTT/HA/série)
+-- Devices IoT (registre unifié MQTT/HA/série/Z2M)
 -- ---------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS devices (
     id          TEXT PRIMARY KEY,
     name        TEXT NOT NULL,
-    transport   TEXT NOT NULL CHECK (transport IN ('mqtt','homeassistant','serial')),
+    transport   TEXT NOT NULL CHECK (transport IN ('mqtt','homeassistant','serial','zigbee2mqtt')),
     config      JSONB NOT NULL DEFAULT '{}'::jsonb,
     requires_admin BOOLEAN NOT NULL DEFAULT FALSE,
     created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()

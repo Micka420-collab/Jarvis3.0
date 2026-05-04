@@ -24,11 +24,15 @@ from _shared.events import (  # noqa: E402
     STREAM_TTS_AUDIO_CHUNK,
     STREAM_VOICE_AUDIO_CHUNK,
     STREAM_VOICE_IDENTITY,
+    STREAM_VOICE_LIVENESS,
     STREAM_VOICE_TRANSCRIPT,
+    STREAM_VOICE_TRANSCRIPT_PARTIAL,
     IntentResponse,
     TtsAudioChunk,
     VoiceAudioChunk,
     VoiceIdentityVerified,
+    VoiceLivenessChecked,
+    VoiceTranscriptPartial,
     VoiceTranscriptReady,
 )
 
@@ -95,7 +99,7 @@ class OwnerStore:
 
 
 async def stt_loop(bus: EventBus) -> None:
-    """Buffer audio par session → VAD → STT à chaque utterance."""
+    """Buffer audio par session → VAD → STT (partial à chaque ~700 ms + final à fin d'utterance)."""
     from .stt_whisper import WhisperSTT
     from .vad import VAD, StreamSegmenter
 
@@ -109,6 +113,14 @@ async def stt_loop(bus: EventBus) -> None:
         log.warning("voiceprint indisponible (%s)", e)
         vp = None
 
+    try:
+        from .liveness import LivenessChecker
+
+        liveness = LivenessChecker()
+    except Exception as e:
+        log.info("liveness AASIST indisponible (%s) — désactivée", e)
+        liveness = None
+
     owner_store = OwnerStore()
     try:
         await owner_store.connect()
@@ -116,10 +128,31 @@ async def stt_loop(bus: EventBus) -> None:
         log.warning("owner store indisponible (%s)", e)
 
     threshold_accept = float(os.getenv("VOICEPRINT_THRESHOLD_ACCEPT", "0.75"))
+    partial_every_bytes = int(os.getenv("STT_PARTIAL_EVERY_MS", "700")) * 32  # 16k * 2 bytes / 1000ms
+    last_partial_text: dict[str, str] = {}
 
     segmenters: dict[str, StreamSegmenter] = defaultdict(lambda: StreamSegmenter(vad))
+    accumulators: dict[str, bytearray] = defaultdict(bytearray)
+
+    async def emit_partial(session_id: str, pcm: bytes) -> None:
+        if not pcm or len(pcm) < 8_000:  # < 0.25s
+            return
+        text, _conf = await asyncio.to_thread(stt.transcribe, pcm)
+        text = text.strip()
+        if not text:
+            return
+        if last_partial_text.get(session_id) == text:
+            return
+        last_partial_text[session_id] = text
+        await bus.publish(
+            STREAM_VOICE_TRANSCRIPT_PARTIAL,
+            VoiceTranscriptPartial(
+                source="voice", session_id=session_id, text=text, is_stable=False
+            ),
+        )
 
     async def emit_utterance(session_id: str, pcm: bytes) -> None:
+        last_partial_text.pop(session_id, None)
         if not pcm or len(pcm) < 8_000:  # < 0.25s
             return
         text, conf = await asyncio.to_thread(stt.transcribe, pcm)
@@ -138,6 +171,21 @@ async def stt_loop(bus: EventBus) -> None:
                 source="voice", session_id=session_id, text=text, confidence=conf
             ),
         )
+        if liveness is not None:
+            try:
+                lv = await asyncio.to_thread(liveness.score, pcm)
+                await bus.publish(
+                    STREAM_VOICE_LIVENESS,
+                    VoiceLivenessChecked(
+                        source="voice",
+                        session_id=session_id,
+                        score=float(lv.score),
+                        is_human=bool(lv.is_human),
+                        threshold=float(lv.threshold),
+                    ),
+                )
+            except Exception as e:
+                log.warning("liveness failed: %s", e)
         if vp is not None:
             try:
                 emb = await asyncio.to_thread(vp.embed, pcm)
@@ -169,14 +217,24 @@ async def stt_loop(bus: EventBus) -> None:
             seg = segmenters[ev.session_id]
             if ev.pcm_b64:
                 pcm = base64.b64decode(ev.pcm_b64)
+                # finalize utterances détectées par le VAD
                 for utterance in seg.push(pcm):
                     await emit_utterance(ev.session_id, utterance)
+                # accumule pour les transcripts partiels (rolling buffer)
+                if seg._in_speech:  # type: ignore[attr-defined]
+                    accumulators[ev.session_id].extend(seg._utterance)  # type: ignore[attr-defined]
+                    if len(accumulators[ev.session_id]) >= partial_every_bytes:
+                        # déclenche un partial mais sans bloquer la consommation
+                        snapshot = bytes(seg._utterance)  # type: ignore[attr-defined]
+                        accumulators[ev.session_id].clear()
+                        asyncio.create_task(emit_partial(ev.session_id, snapshot))
                 continue
             # marker fin → flush
             tail = seg.flush()
             if tail:
                 await emit_utterance(ev.session_id, tail)
             segmenters.pop(ev.session_id, None)
+            accumulators.pop(ev.session_id, None)
         except Exception as e:
             log.exception("STT loop error: %s", e)
 

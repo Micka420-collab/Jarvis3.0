@@ -32,7 +32,7 @@ from _shared.events import (  # noqa: E402
 )
 
 from . import challenge  # noqa: E402
-from .identity import IdentityStore, consume_identity_events  # noqa: E402
+from .identity import IdentityStore, consume_identity_events, consume_liveness_events  # noqa: E402
 from .tools import TOOL_DEFS, dispatch_tool  # noqa: E402
 from .tools.registry import ADMIN_TOOLS  # noqa: E402
 
@@ -69,11 +69,20 @@ def _resolve_owner_state(session_id: str) -> tuple[bool, float]:
 
 
 def _gate_admin(session_id: str, name: str) -> tuple[bool, str | None]:
-    """Retourne (autorisé, phrase_challenge_si_besoin)."""
+    """Retourne (autorisé, phrase_challenge_si_besoin).
+
+    Politique pour les admin tools :
+    1. La voix doit être considérée comme humaine (AASIST liveness) si activée.
+    2. La similarité voix-print doit être ≥ accept, sinon zone grise → challenge.
+    3. Si challenge déjà passé dans cette session, accepté.
+    """
     if name not in ADMIN_TOOLS:
         return True, None
     cur = identity_store.get(session_id)
     if cur is None:
+        return False, None
+    # liveness: si AASIST a tourné et a rejeté, on bloque dur (pas de challenge)
+    if not cur.is_human:
         return False, None
     if cur.similarity >= THRESHOLD_ACCEPT and cur.is_owner:
         return True, None
@@ -171,10 +180,12 @@ async def lifespan(app: FastAPI):
     await bus.connect()
     transcript_task = asyncio.create_task(transcript_loop(bus))
     identity_task = asyncio.create_task(consume_identity_events(bus, identity_store))
+    liveness_task = asyncio.create_task(consume_liveness_events(bus, identity_store))
     app.state.bus = bus
     yield
     transcript_task.cancel()
     identity_task.cancel()
+    liveness_task.cancel()
     await bus.close()
 
 

@@ -70,8 +70,31 @@ endif
 discover-ha:
 	$(COMPOSE) exec iot curl -fsS -X POST http://localhost:8002/discover/ha
 
+discover-zigbee:
+	$(COMPOSE) exec iot curl -fsS -X POST http://localhost:8002/discover/zigbee
+
 up-vision:
 	$(COMPOSE) --profile vision up -d
+
+up-zigbee:
+	$(COMPOSE) --profile zigbee up -d
+
+up-all:
+	$(COMPOSE) --profile vision --profile zigbee up -d
+
+up-rpi:
+	$(COMPOSE) -f docker-compose.yml -f docker-compose.rpi.yml up -d
+
+build-multiarch:
+	@echo "Build multi-arch (amd64 + arm64) — nécessite buildx + login GHCR"
+	docker buildx create --use --name jarvis-builder 2>/dev/null || true
+	@for s in gateway voice llm orchestrator memory iot security vision; do \
+	  docker buildx build --platform linux/amd64,linux/arm64 \
+	    -t ghcr.io/micka420-collab/jarvis-$$s:$${TAG:-latest} \
+	    --push services/$$s ; \
+	done
+	docker buildx build --platform linux/amd64,linux/arm64 \
+	  -t ghcr.io/micka420-collab/jarvis-frontend:$${TAG:-latest} --push frontend
 
 test:
 	$(COMPOSE) exec gateway pytest /app/tests/unit -v
