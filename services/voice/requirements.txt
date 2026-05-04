@@ -1,0 +1,21 @@
+pydantic==2.9.2
+pydantic-settings==2.5.2
+redis==5.0.8
+numpy==1.26.4
+soundfile==0.12.1
+# STT
+faster-whisper==1.0.3
+# TTS local
+piper-tts==1.2.0
+# Wake-word
+openwakeword==0.6.0
+# Voice-print (ECAPA via SpeechBrain)
+speechbrain==1.0.0
+torch==2.4.1
+torchaudio==2.4.1
+# VAD
+silero-vad==5.1
+# HTTP client (ElevenLabs)
+httpx==0.27.2
+# Postgres (lecture voiceprint)
+asyncpg==0.29.0

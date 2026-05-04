@@ -1,0 +1,108 @@
+:root {
+  --bg: #0a0e14;
+  --fg: #d8e2f0;
+  --accent: #4cc9f0;
+  --accent-2: #4361ee;
+  --danger: #ef476f;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: radial-gradient(circle at top, #142039 0%, var(--bg) 70%);
+  color: var(--fg);
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+#root {
+  height: 100vh;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+}
+
+header {
+  padding: 1rem 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+header .brand {
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--accent);
+  text-transform: uppercase;
+}
+
+main {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 1rem;
+  padding: 1rem;
+  overflow: hidden;
+}
+
+.avatar-wrap {
+  background: rgba(0,0,0,0.25);
+  border-radius: 16px;
+  position: relative;
+  overflow: hidden;
+}
+
+.transcript {
+  background: rgba(0,0,0,0.25);
+  border-radius: 16px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  overflow-y: auto;
+  font-size: 0.9rem;
+}
+
+.transcript .line { padding: 0.4rem 0.6rem; border-radius: 8px; }
+.transcript .line.user { background: rgba(67,97,238,0.18); }
+.transcript .line.bot { background: rgba(76,201,240,0.12); }
+.transcript .line.alert { background: rgba(239,71,111,0.18); }
+
+footer {
+  padding: 1rem 1.5rem;
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  border-top: 1px solid rgba(255,255,255,0.05);
+}
+
+button.mic {
+  background: var(--accent);
+  border: none;
+  color: #0a0e14;
+  padding: 0.7rem 1.2rem;
+  border-radius: 999px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.1s ease, background 0.2s;
+}
+button.mic.recording { background: var(--danger); color: #fff; }
+button.mic:hover { transform: translateY(-1px); }
+
+input.text {
+  flex: 1;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.08);
+  color: var(--fg);
+  padding: 0.7rem 1rem;
+  border-radius: 999px;
+  font-size: 0.95rem;
+  outline: none;
+}
+input.text:focus { border-color: var(--accent); }
+
+.status {
+  font-size: 0.8rem;
+  color: rgba(216,226,240,0.6);
+}

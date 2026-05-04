@@ -1,0 +1,5 @@
+# Exemple de fichier passwd Mosquitto
+# Pour générer le vrai fichier avec le hash bcrypt :
+#   docker run --rm -it eclipse-mosquitto:2 mosquitto_passwd -c /tmp/passwd jarvis
+# puis copier le contenu vers ./infra/mosquitto/config/passwd
+jarvis:$7$101$DUMMY_REPLACE_ME$DUMMY_HASH_REPLACE_ME
