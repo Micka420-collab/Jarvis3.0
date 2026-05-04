@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Agents } from "./Agents";
+import { Connections } from "./Connections";
 import { Dashboard } from "./Dashboard";
 import { Devices } from "./Devices";
 import { Login } from "./Login";
@@ -10,10 +11,20 @@ import { Traces } from "./Traces";
 import { Users } from "./Users";
 import { getToken, setToken } from "./api";
 
-type Tab = "dashboard" | "users" | "devices" | "routines" | "skills" | "agents" | "security" | "traces";
+type Tab =
+  | "dashboard"
+  | "connections"
+  | "users"
+  | "devices"
+  | "routines"
+  | "skills"
+  | "agents"
+  | "security"
+  | "traces";
 
 const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: "dashboard", label: "Dashboard", icon: "■" },
+  { id: "connections", label: "Connexions", icon: "🔌" },
   { id: "users", label: "Membres", icon: "👤" },
   { id: "devices", label: "Devices", icon: "⚡" },
   { id: "routines", label: "Routines", icon: "🔁" },
@@ -57,6 +68,7 @@ export function Admin() {
       </aside>
       <main className="admin-main">
         {tab === "dashboard" && <Dashboard />}
+        {tab === "connections" && <Connections />}
         {tab === "users" && <Users />}
         {tab === "devices" && <Devices />}
         {tab === "routines" && <Routines />}

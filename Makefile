@@ -95,6 +95,9 @@ build-agents-full:
 list-agents:
 	$(COMPOSE) exec agents curl -fsS http://localhost:8005/agents | python3 -m json.tool
 
+wizard:
+	@bash scripts/wizard.sh
+
 build-multiarch:
 	@echo "Build multi-arch (amd64 + arm64) — nécessite buildx + login GHCR"
 	docker buildx create --use --name jarvis-builder 2>/dev/null || true

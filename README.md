@@ -121,7 +121,10 @@ Le script :
 - génère des secrets aléatoires sécurisés (JWT, Postgres, MQTT, **clés VAPID** pour les push)
 - crée le réseau Docker partagé avec Argus
 - télécharge les modèles Piper, build et lance la stack
+- **lance le wizard interactif** qui te connecte chaque feature à l'IA (LLM, Home Assistant, Zigbee, Z-Wave, Frigate, Argus, agents, voix-print)
 - imprime ton URL d'accès
+
+Pour relancer le wizard plus tard : `cd ~/Jarvis3.0 && make wizard`. Tu peux aussi tester chaque connexion en live depuis **`/admin → Connexions`**.
 
 Une fois terminé : ouvre **`https://jarvis.local`** (assistant) ou **`https://jarvis.local/admin`** (console).
 

@@ -235,6 +235,20 @@ ${C_GREEN}═══════════════════════�
 EOF
 }
 
+run_wizard() {
+  if [ -t 0 ] && [ -t 1 ] && [ -x "$INSTALL_DIR/scripts/wizard.sh" ]; then
+    if [ "${SKIP_WIZARD:-0}" = "1" ]; then
+      warn "SKIP_WIZARD=1 — tu pourras le lancer plus tard avec : make wizard"
+      return
+    fi
+    log "Lancement du wizard de connexion (Ctrl+C pour skip)…"
+    sleep 1
+    bash "$INSTALL_DIR/scripts/wizard.sh" || warn "Wizard interrompu — relance plus tard avec : make wizard"
+  else
+    warn "Pas de TTY — wizard non lancé. Connecte les features manuellement avec : make wizard"
+  fi
+}
+
 main() {
   banner
   detect_os
@@ -245,6 +259,7 @@ main() {
   download_models
   build_and_up
   wait_health
+  run_wizard
   show_summary
 }
 

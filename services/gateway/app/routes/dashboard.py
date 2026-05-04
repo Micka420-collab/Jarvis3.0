@@ -259,6 +259,130 @@ async def push_test(body: PushTestBody, user: Annotated[dict, Depends(require_ow
     )
 
 
+# --- Wizard / connexions ---
+
+
+class TestConnBody(BaseModel):
+    kind: str   # "homeassistant" | "argus" | "frigate" | "anthropic" | "ollama" | "mqtt"
+    url: str | None = None
+    token: str | None = None
+    api_key: str | None = None
+    extra: dict = {}
+
+
+@router.post("/wizard/test")
+async def wizard_test(body: TestConnBody, user: Annotated[dict, Depends(require_owner)]) -> dict:
+    """Teste une connexion sans persister les valeurs. Réponse uniforme :
+    {"ok": bool, "detail": str, "latency_ms": int}.
+    """
+    import time
+
+    t0 = time.time()
+    try:
+        async with httpx.AsyncClient(timeout=4.0) as c:
+            if body.kind == "homeassistant":
+                r = await c.get(
+                    f"{body.url}/api/",
+                    headers={"Authorization": f"Bearer {body.token}"},
+                )
+                ok = r.status_code == 200
+                detail = r.json().get("message", "") if ok else r.text[:200]
+            elif body.kind == "argus":
+                r = await c.get(
+                    f"{body.url}/api/health",
+                    headers={"Authorization": f"Bearer {body.token}"} if body.token else {},
+                )
+                ok, detail = r.status_code == 200, r.text[:200]
+            elif body.kind == "frigate":
+                r = await c.get(f"{body.url}/api/version")
+                ok, detail = r.status_code == 200, r.text[:200]
+            elif body.kind == "anthropic":
+                r = await c.post(
+                    "https://api.anthropic.com/v1/messages",
+                    headers={
+                        "x-api-key": body.api_key or "",
+                        "anthropic-version": "2023-06-01",
+                        "content-type": "application/json",
+                    },
+                    json={
+                        "model": body.extra.get("model", "claude-haiku-4-5-20251001"),
+                        "max_tokens": 8,
+                        "messages": [{"role": "user", "content": "ping"}],
+                    },
+                )
+                ok = r.status_code == 200
+                detail = r.text[:200]
+            elif body.kind == "ollama":
+                r = await c.get(f"{body.url or 'http://ollama:11434'}/api/tags")
+                ok, detail = r.status_code == 200, r.text[:200]
+            elif body.kind == "mqtt":
+                # test via service iot
+                r = await c.get("http://iot:8002/health")
+                ok, detail = r.status_code == 200, r.text[:200]
+            else:
+                ok, detail = False, f"kind inconnu: {body.kind}"
+    except Exception as e:
+        ok, detail = False, f"{type(e).__name__}: {e}"
+    return {
+        "ok": ok,
+        "detail": detail,
+        "latency_ms": int((time.time() - t0) * 1000),
+    }
+
+
+@router.get("/wizard/state")
+async def wizard_state(user: Annotated[dict, Depends(require_owner)]) -> dict:
+    """État de chaque connexion (sans révéler les secrets)."""
+    pool = await get_pool()
+    services_health = {}
+    async with httpx.AsyncClient(timeout=2.0) as c:
+        for name, url in [
+            ("orchestrator", "http://orchestrator:8001/health"),
+            ("memory", "http://memory:8004/health"),
+            ("iot", "http://iot:8002/health"),
+            ("security", "http://security:8003/health"),
+            ("agents", "http://agents:8005/health"),
+        ]:
+            try:
+                r = await c.get(url)
+                services_health[name] = r.status_code == 200
+            except Exception:
+                services_health[name] = False
+    async with pool.acquire() as conn:
+        users_voice = await conn.fetchval(
+            "SELECT COUNT(*) FROM users WHERE voice_enrolled = TRUE"
+        )
+        users_face = await conn.fetchval(
+            "SELECT COUNT(*) FROM users WHERE face_enrolled = TRUE"
+        )
+    import os
+
+    return {
+        "llm": {
+            "provider": os.getenv("LLM_PROVIDER", "ollama"),
+            "model": os.getenv("LLM_MODEL", ""),
+            "anthropic_configured": bool(os.getenv("ANTHROPIC_API_KEY")),
+        },
+        "homeassistant": {
+            "url": os.getenv("HA_BASE_URL", ""),
+            "token_present": bool(os.getenv("HA_LONG_LIVED_TOKEN")),
+        },
+        "argus": {
+            "url": os.getenv("ARGUS_BASE_URL", ""),
+            "token_present": bool(os.getenv("ARGUS_API_TOKEN")),
+        },
+        "frigate": {"url": os.getenv("FRIGATE_API_URL", "")},
+        "vapid": {"configured": bool(os.getenv("VAPID_PUBLIC_KEY"))},
+        "agents": {
+            "hermes": bool(os.getenv("INSTALL_HERMES") == "true"),
+            "openclaw": bool(os.getenv("INSTALL_OPENCLAW") == "true"),
+        },
+        "voice_enrolled_users": users_voice,
+        "face_enrolled_users": users_face,
+        "services": services_health,
+    }
+
+
 # --- Presence ---
 
 

@@ -81,4 +81,8 @@ export const api = {
   // push
   pushTest: (title: string, body: string) =>
     call("POST", "/api/admin/push-test", { title, body }),
+
+  // wizard / connexions
+  wizardState: () => call("GET", "/api/admin/wizard/state"),
+  wizardTest: (b: any) => call("POST", "/api/admin/wizard/test", b),
 };
