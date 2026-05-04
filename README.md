@@ -300,15 +300,21 @@ Détail du modèle voix-print : [`docs/voiceprint.md`](docs/voiceprint.md).
 - Manifests Kubernetes/k3s (Kustomize base + overlays prod / rpi)
 - Build multi-arch (amd64 + arm64) + override Raspberry Pi
 
+### Récemment livré (suite)
+
+- **Helm chart Kubernetes** : `helm install jarvis ./helm/jarvis` + `values.rpi.yaml` pour ARM64
+- **Memory-augmented prompting** : top-K souvenirs Qdrant injectés en contexte à chaque tour (RAG)
+- **Z-Wave natif** via zwave-js-ui (parallèle à Zigbee2MQTT) — discovery + commandes MQTT
+- **App native Capacitor** : iOS + Android, push notifs, splash (`npm run cap:add:android`)
+- **Multimodal Claude Vision** : provider `anthropic-vision` injecte une frame Frigate dans le prompt
+- **Multi-room audio** : `SpeakerRouter` choisit l'enceinte de la pièce occupée (browser/MQTT/Snapcast/HA)
+- **Mode agent autonome** : `is_autonomous_request()` détecte les goals complexes et chaîne jusqu'à 8 tool calls
+
 ### À venir
 
-- Helm chart Kubernetes (en alternative à Kustomize)
-- Memory-augmented prompting : tire les `n` souvenirs les plus pertinents avant chaque tour
-- Z-Wave natif via zwavejs2mqtt (en plus de Zigbee2MQTT)
-- App native (Capacitor) pour intégration plus profonde Android/iOS
-- Multimodal : Claude Vision pour comprendre la caméra en temps réel pendant la voix
-- Multi-room audio : TTS automatiquement routé vers l'enceinte de la pièce occupée
-- Mode "agent autonome" : Jarvis peut chaîner plusieurs tools complexes pour accomplir une tâche
+- Détection deepfake video pour faux clones de visages devant les caméras
+- Routine builder visuel dans l'admin (drag-and-drop tools)
+- Fédération multi-instances (résidence principale ↔ secondaire)
 
 ---
 

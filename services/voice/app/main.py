@@ -40,7 +40,10 @@ from _shared.events import (  # noqa: E402
     VoiceTranscriptReady,
 )
 
+from .multiroom import SpeakerRouter, push_to_speaker  # noqa: E402
 from .visemes import amplitude_to_jaw  # noqa: E402
+
+speaker_router = SpeakerRouter()
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s — %(message)s")
 log = logging.getLogger("voice")
@@ -288,17 +291,27 @@ async def _tts_one(bus: EventBus, tts, session_id: str, text: str, is_final: boo
         if viseme is None:
             jaw = amplitude_to_jaw(chunk)
             viseme = "aa" if jaw > 0.6 else ("E" if jaw > 0.3 else "sil")
+        pcm_b64 = base64.b64encode(chunk).decode("ascii")
         await bus.publish(
             STREAM_TTS_AUDIO_CHUNK,
             TtsAudioChunk(
                 source="voice",
                 session_id=session_id,
-                pcm_b64=base64.b64encode(chunk).decode("ascii"),
+                pcm_b64=pcm_b64,
                 seq=seq,
                 is_final=False,
                 viseme=viseme,
             ),
         )
+        # Multi-room : duplique vers l'enceinte sélectionnée (pas browser_main)
+        try:
+            target = speaker_router.select()
+            if target is not None:
+                sid, sp = target
+                if sp.get("kind") not in (None, "browser"):
+                    await push_to_speaker(sp, pcm_b64, viseme)
+        except Exception as e:
+            log.debug("multiroom push failed: %s", e)
         seq += 1
     if is_final or barge.is_set():
         await bus.publish(

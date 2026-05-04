@@ -35,6 +35,7 @@ from .ha_bridge import HABridge  # noqa: E402
 from .mqtt_bridge import MQTTBridge  # noqa: E402
 from .serial_bridge import SerialBridge  # noqa: E402
 from .zigbee_bridge import Z2MBridge  # noqa: E402
+from .zwave_bridge import ZWaveBridge  # noqa: E402
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s — %(message)s")
 log = logging.getLogger("iot")
@@ -74,6 +75,7 @@ async def lifespan(app: FastAPI):
     app.state.ha = HABridge()
     app.state.serial = SerialBridge(on_state=on_serial_state)
     app.state.zigbee = Z2MBridge()
+    app.state.zwave = ZWaveBridge()
     try:
         await app.state.serial.open()
     except Exception as e:
@@ -189,6 +191,46 @@ async def state(device_id: str = Query(...)) -> dict:
     if dev["transport"] == "homeassistant":
         return await app.state.ha.get_state(dev["config"]["entity_id"])
     return {"state": "unknown", "note": "implémentation à compléter pour ce transport"}
+
+
+async def _persist_devices(entities: list[dict]) -> dict:
+    pool = await asyncpg.create_pool(
+        host=os.getenv("POSTGRES_HOST", "postgres"),
+        port=int(os.getenv("POSTGRES_PORT", "5432")),
+        database=os.getenv("POSTGRES_DB", "jarvis"),
+        user=os.getenv("POSTGRES_USER", "jarvis"),
+        password=os.getenv("POSTGRES_PASSWORD", ""),
+        min_size=1,
+        max_size=2,
+    )
+    inserted = 0
+    try:
+        async with pool.acquire() as conn:
+            for e in entities:
+                await conn.execute(
+                    """
+                    INSERT INTO devices(id, name, transport, config, requires_admin)
+                    VALUES($1, $2, $3, $4::jsonb, $5)
+                    ON CONFLICT (id) DO UPDATE
+                       SET name = EXCLUDED.name,
+                           config = EXCLUDED.config,
+                           requires_admin = EXCLUDED.requires_admin
+                    """,
+                    e["id"],
+                    e["name"],
+                    e["transport"],
+                    __import__("json").dumps(e["config"]),
+                    e["requires_admin"],
+                )
+                inserted += 1
+    finally:
+        await pool.close()
+    return {"discovered": inserted}
+
+
+@app.post("/discover/zwave")
+async def discover_zwave() -> dict:
+    return await _persist_devices(await app.state.zwave.list_devices())
 
 
 @app.post("/discover/zigbee")

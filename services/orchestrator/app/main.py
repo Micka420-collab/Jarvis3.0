@@ -35,6 +35,8 @@ from _shared.events import (  # noqa: E402
 
 from . import challenge  # noqa: E402
 from .identity import IdentityStore, consume_identity_events, consume_liveness_events  # noqa: E402
+from .autonomous import is_autonomous_request, run_autonomous  # noqa: E402
+from .rag import fetch_relevant_memories, format_context  # noqa: E402
 from .skills import registry as skill_registry  # noqa: E402
 from .streaming import stream_sentences  # noqa: E402
 from .tools import dispatch_tool as legacy_dispatch_tool  # noqa: E402
@@ -285,11 +287,66 @@ async def transcript_loop(bus: EventBus) -> None:
             memory_hits: list[dict] = []
 
             history = _HISTORY.setdefault(ev.session_id, [])
+
+            # Mode agent autonome : si la requête a l'air complexe, on bascule
+            # sur le chaînage multi-tools en arrière-plan et on annonce vocalement.
+            if is_autonomous_request(ev.text):
+                await bus.publish(
+                    STREAM_INTENT_RESPONSE,
+                    IntentResponse(
+                        source="orchestrator",
+                        session_id=ev.session_id,
+                        text="J'enchaîne plusieurs étapes — je te dis dès que c'est fini.",
+                    ),
+                )
+                ctx_auto = {
+                    "session_id": ev.session_id,
+                    "user_id": user_id,
+                    "is_owner": owner_now,
+                }
+                result = await run_autonomous(
+                    [{"role": "user", "content": ev.text}],
+                    call_llm,
+                    dispatch_tool,
+                    _gate_admin,
+                    ctx_auto,
+                )
+                await bus.publish(
+                    STREAM_INTENT_RESPONSE,
+                    IntentResponse(
+                        source="orchestrator",
+                        session_id=ev.session_id,
+                        text=result["reply"],
+                    ),
+                )
+                duration_ms = int((_time.time() - t0) * 1000)
+                await trace_reasoning(
+                    ev.session_id, user_id, ev.text, "autonomous",
+                    [{"name": s["tool"], "args": s["args"]} for s in result["steps"]],
+                    [], result["reply"], duration_ms,
+                )
+                continue
+
+            # Memory-augmented prompting : on récupère K souvenirs pertinents
+            # et on les injecte comme message system additionnel pour ce tour.
+            memories = await fetch_relevant_memories(ev.text, user_id=user_id)
+            memory_hits = [
+                {"score": m.get("score"), "text": m.get("text"), "id": m.get("id")}
+                for m in memories
+            ]
+            if memories:
+                ctx_msg = format_context(memories)
+                # injecte au tout début (sans polluer l'historique récurrent)
+                history_with_ctx = (
+                    [{"role": "system", "content": ctx_msg}] + history + [{"role": "user", "content": ev.text}]
+                )
+            else:
+                history_with_ctx = history + [{"role": "user", "content": ev.text}]
             history.append({"role": "user", "content": ev.text})
 
             # Si STREAM_ENABLED et pas de tool nécessaire, on streame phrase-par-phrase
             if STREAM_ENABLED:
-                token_iter = await stream_llm_tokens(history)
+                token_iter = await stream_llm_tokens(history_with_ctx)
                 full_text = ""
                 seq = 0
                 async for sentence in stream_sentences(token_iter):
@@ -404,6 +461,34 @@ async def skills_list() -> dict:
 async def skills_reload() -> dict:
     skill_registry.reload()
     return {"status": "reloaded", "count": len(skill_registry.all_skills())}
+
+
+class AutonomousRequest(BaseModel):
+    session_id: str
+    user_id: str | None = None
+    is_owner: bool = False
+    text: str
+    max_steps: int = 8
+
+
+@app.post("/autonomous")
+async def autonomous(req: AutonomousRequest) -> dict:
+    """Mode agent autonome : enchaîne plusieurs tools jusqu'à atteindre l'objectif."""
+    history = [{"role": "user", "content": req.text}]
+    ctx = {
+        "session_id": req.session_id,
+        "user_id": req.user_id,
+        "is_owner": req.is_owner,
+    }
+    out = await run_autonomous(
+        history,
+        call_llm,
+        dispatch_tool,
+        _gate_admin,
+        ctx,
+        max_steps=req.max_steps,
+    )
+    return out
 
 
 @app.get("/identity")

@@ -13,6 +13,10 @@ def make_adapter(provider: str | None = None) -> LLMAdapter:
         from .adapters.anthropic import AnthropicAdapter
 
         return AnthropicAdapter()
+    if provider == "anthropic-vision":
+        from .adapters.anthropic_vision import AnthropicVisionAdapter
+
+        return AnthropicVisionAdapter()
     if provider == "mistral":
         from .adapters.mistral import MistralAdapter
 

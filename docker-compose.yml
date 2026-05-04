@@ -17,6 +17,7 @@ volumes:
   minio-data:
   ollama-data:
   frigate-media:
+  zwave-data:
 
 services:
 
@@ -106,6 +107,27 @@ services:
     networks:
       - jarvis-net
       - proxmox_lan
+
+  zwave-js-ui:
+    image: zwavejs/zwave-js-ui:latest
+    container_name: jarvis-zwave
+    restart: unless-stopped
+    profiles: ["zwave"]
+    environment:
+      TZ: "${TZ:-Europe/Paris}"
+    devices:
+      - /dev/ttyUSB-zwave:/dev/ttyUSB-zwave
+    volumes:
+      - zwave-data:/usr/src/app/store
+    networks:
+      - jarvis-net
+      - proxmox_lan
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.zwave.rule=Host(`zwave.${JARVIS_DOMAIN}`)
+      - traefik.http.routers.zwave.entrypoints=websecure
+      - traefik.http.routers.zwave.tls=true
+      - traefik.http.services.zwave.loadbalancer.server.port=8091
 
   zigbee2mqtt:
     image: koenkk/zigbee2mqtt:latest

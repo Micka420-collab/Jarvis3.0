@@ -1,0 +1,68 @@
+{{- /*
+Génère Deployment+Service pour chaque microservice activé.
+Les ports : gateway=8000, orchestrator=8001, iot=8002, security=8003, memory=8004, agents=8005, llm=8000, frontend=80.
+*/ -}}
+{{- $svcs := dict
+  "gateway"      (dict "port" 8000 "health" "/api/health")
+  "voice"        (dict "port" 0    "health" "")
+  "llm"          (dict "port" 8000 "health" "/health")
+  "orchestrator" (dict "port" 8001 "health" "/health")
+  "memory"       (dict "port" 8004 "health" "/health")
+  "iot"          (dict "port" 8002 "health" "/health")
+  "security"     (dict "port" 8003 "health" "/health")
+  "vision"       (dict "port" 0    "health" "")
+  "learning"     (dict "port" 0    "health" "")
+  "agents"       (dict "port" 8005 "health" "/health")
+  "frontend"     (dict "port" 80   "health" "/")
+-}}
+
+{{- range $name, $cfg := $svcs }}
+{{- $vals := index $.Values.services $name -}}
+{{- if $vals.enabled }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $name }}
+  labels: {{- include "jarvis.labels" $ | nindent 4 }}
+spec:
+  replicas: {{ default 1 $vals.replicas }}
+  selector:
+    matchLabels: { app: {{ $name }} }
+  template:
+    metadata:
+      labels: { app: {{ $name }} }
+    spec:
+      containers:
+        - name: {{ $name }}
+          image: {{ include "jarvis.image" (dict "name" $name "Values" $.Values) }}
+          imagePullPolicy: {{ $.Values.global.imagePullPolicy }}
+          envFrom: {{- include "jarvis.envFrom" $ | nindent 12 }}
+          {{- if gt (int $cfg.port) 0 }}
+          ports:
+            - containerPort: {{ $cfg.port }}
+          {{- if $cfg.health }}
+          readinessProbe:
+            httpGet: { path: {{ $cfg.health }}, port: {{ $cfg.port }} }
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          {{- end }}
+          {{- end }}
+          {{- with $vals.resources }}
+          resources: {{- toYaml . | nindent 12 }}
+          {{- end }}
+{{- if gt (int $cfg.port) 0 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $name }}
+  labels: {{- include "jarvis.labels" $ | nindent 4 }}
+spec:
+  selector: { app: {{ $name }} }
+  ports:
+    - port: {{ $cfg.port }}
+      targetPort: {{ $cfg.port }}
+{{- end }}
+{{- end }}
+{{- end }}

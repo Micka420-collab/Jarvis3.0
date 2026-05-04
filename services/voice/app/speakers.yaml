@@ -1,0 +1,30 @@
+# Registre des enceintes multi-room.
+# kind ∈ { browser, mqtt, snapcast, homeassistant }
+# default: une seule des enceintes peut avoir default=true (utilisée si
+# aucune présence détectée)
+
+speakers:
+  - id: browser_main
+    name: Navigateur principal (UI Jarvis)
+    room: any
+    kind: browser
+    default: true
+
+  # Exemples (à activer avec ton matériel réel) :
+  # - id: salon_kef
+  #   name: KEF Salon
+  #   room: salon
+  #   kind: snapcast
+  #   url: http://snapcast:1780/streams/salon
+  #
+  # - id: chambre_googlehome
+  #   name: Google Home Chambre
+  #   room: chambre
+  #   kind: homeassistant
+  #   entity_id: media_player.chambre
+  #
+  # - id: cuisine_esp32
+  #   name: Speaker ESP32 Cuisine
+  #   room: cuisine
+  #   kind: mqtt
+  #   topic: jarvis/speakers/cuisine/play

@@ -1,0 +1,143 @@
+{{- if .Values.infra.redis.enabled }}
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata: { name: redis }
+spec:
+  serviceName: redis
+  replicas: 1
+  selector: { matchLabels: { app: redis } }
+  template:
+    metadata: { labels: { app: redis } }
+    spec:
+      containers:
+        - name: redis
+          image: redis:7-alpine
+          args: ["redis-server", "--appendonly", "yes"]
+          ports: [{ containerPort: 6379 }]
+          volumeMounts: [{ name: data, mountPath: /data }]
+  volumeClaimTemplates:
+    - metadata: { name: data }
+      spec:
+        accessModes: [ReadWriteOnce]
+        {{- with .Values.global.storageClass }}
+        storageClassName: {{ . }}
+        {{- end }}
+        resources: { requests: { storage: {{ .Values.infra.redis.storage }} } }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: redis }
+spec:
+  selector: { app: redis }
+  ports: [{ port: 6379, targetPort: 6379 }]
+{{- end }}
+
+{{- if .Values.infra.postgres.enabled }}
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata: { name: postgres }
+spec:
+  serviceName: postgres
+  replicas: 1
+  selector: { matchLabels: { app: postgres } }
+  template:
+    metadata: { labels: { app: postgres } }
+    spec:
+      containers:
+        - name: postgres
+          image: {{ .Values.infra.postgres.image }}
+          envFrom: {{- include "jarvis.envFrom" $ | nindent 12 }}
+          env:
+            - { name: POSTGRES_DB,       valueFrom: { configMapKeyRef: { name: jarvis-config, key: POSTGRES_DB } } }
+            - { name: POSTGRES_USER,     valueFrom: { configMapKeyRef: { name: jarvis-config, key: POSTGRES_USER } } }
+            - { name: POSTGRES_PASSWORD, valueFrom: { secretKeyRef:    { name: jarvis-secrets, key: POSTGRES_PASSWORD } } }
+          ports: [{ containerPort: 5432 }]
+          volumeMounts: [{ name: data, mountPath: /var/lib/postgresql/data }]
+  volumeClaimTemplates:
+    - metadata: { name: data }
+      spec:
+        accessModes: [ReadWriteOnce]
+        {{- with .Values.global.storageClass }}
+        storageClassName: {{ . }}
+        {{- end }}
+        resources: { requests: { storage: {{ .Values.infra.postgres.storage }} } }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: postgres }
+spec:
+  selector: { app: postgres }
+  ports: [{ port: 5432, targetPort: 5432 }]
+{{- end }}
+
+{{- if .Values.infra.qdrant.enabled }}
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata: { name: qdrant }
+spec:
+  serviceName: qdrant
+  replicas: 1
+  selector: { matchLabels: { app: qdrant } }
+  template:
+    metadata: { labels: { app: qdrant } }
+    spec:
+      containers:
+        - name: qdrant
+          image: qdrant/qdrant:v1.11.0
+          ports:
+            - { containerPort: 6333 }
+          volumeMounts: [{ name: storage, mountPath: /qdrant/storage }]
+  volumeClaimTemplates:
+    - metadata: { name: storage }
+      spec:
+        accessModes: [ReadWriteOnce]
+        {{- with .Values.global.storageClass }}
+        storageClassName: {{ . }}
+        {{- end }}
+        resources: { requests: { storage: {{ .Values.infra.qdrant.storage }} } }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: qdrant }
+spec:
+  selector: { app: qdrant }
+  ports: [{ port: 6333, targetPort: 6333 }]
+{{- end }}
+
+{{- if .Values.infra.mosquitto.enabled }}
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata: { name: mosquitto }
+spec:
+  serviceName: mosquitto
+  replicas: 1
+  selector: { matchLabels: { app: mosquitto } }
+  template:
+    metadata: { labels: { app: mosquitto } }
+    spec:
+      containers:
+        - name: mosquitto
+          image: eclipse-mosquitto:2
+          ports:
+            - { containerPort: 1883 }
+            - { containerPort: 9001 }
+          volumeMounts: [{ name: data, mountPath: /mosquitto/data }]
+  volumeClaimTemplates:
+    - metadata: { name: data }
+      spec:
+        accessModes: [ReadWriteOnce]
+        resources: { requests: { storage: {{ .Values.infra.mosquitto.storage }} } }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: mosquitto }
+spec:
+  selector: { app: mosquitto }
+  ports:
+    - { name: mqtt, port: 1883, targetPort: 1883 }
+    - { name: ws,   port: 9001, targetPort: 9001 }
+{{- end }}
