@@ -40,16 +40,23 @@ Jarvis 3.0 est un assistant inspiré du **J.A.R.V.I.S. d'Iron Man**, conçu pour
 
 | Domaine | Capacités |
 |---|---|
-| **Voix** | Wake-word (`openWakeWord`), STT (`faster-whisper`), VAD silero, **partial transcripts streaming**, TTS streaming (`Piper` / `ElevenLabs`) |
-| **Avatar** | React + Three.js, **GLTF haute-fidélité avec 52 blendshapes ARKit** (fallback icosaèdre), waveform live |
-| **LLM** | Routeur multi-provider : Ollama (local) · Claude · Mistral · prompt système & tool calling |
+| **Voix** | Wake-word, STT streaming partials, VAD silero, **conversation duplex avec barge-in** (interruption), TTS streaming `Piper`/`ElevenLabs` |
+| **Avatar** | React + Three.js, **GLTF haute-fidélité avec 52 blendshapes ARKit** (fallback icosaèdre), idle motion + clignement, waveform live |
+| **LLM** | Routeur multi-provider Ollama / Claude / Mistral · **streaming token → phrase-par-phrase → TTS** (latence perçue <500 ms) · tool calling |
+| **Skills** | Système de **plugins hot-reload** (POST `/skills/reload`) · 5 builtins : time, weather, briefing, routines, presence, explain |
 | **Mémoire** | Vectorielle (`Qdrant` + bge-m3) + faits structurés (`Postgres pgvector`) |
-| **Voix-print** | Biométrie ECAPA-TDNN 192-d · challenge phrase dynamique · **liveness AASIST anti-deepfake** · cooldown admin |
-| **IoT** | MQTT (Mosquitto) · Home Assistant (REST + discovery) · Arduino USB série (JSON-line) · **Zigbee2MQTT** |
-| **Vision** | Frigate (NVR/RTSP) + InsightFace (reconnaissance faciale) + enroll webcam |
-| **Sécurité** | Client WS Argus · mapping MITRE ATT&CK · alertes vocales proactives · liveness anti-spoof |
+| **Profils familiaux** | Multi-utilisateurs avec rôles (owner/adult/teen/child/guest), permissions JSON, voix-print et visage par membre |
+| **Voix-print** | ECAPA-TDNN 192-d, **multi-membres**, challenge phrase dynamique, **liveness AASIST anti-deepfake**, cooldown admin |
+| **Briefing matinal** | Météo (Open-Meteo) + agenda CalDAV + état Argus + état IoT en un tool LLM |
+| **Routines apprises** | Service `learning` détecte les patterns (`device × heure × ≥N jours`) et propose des automations à l'owner |
+| **Présence simulée** | Mode anti-cambriolage : rejoue les actions IoT typiques avec randomisation pendant l'absence |
+| **IoT** | MQTT (Mosquitto) · Home Assistant (REST + discovery) · Arduino USB série · **Zigbee2MQTT** (avec discovery + states) |
+| **Vision** | Frigate (NVR/RTSP) + InsightFace (reconnaissance faciale multi-visages) |
+| **Sécurité** | Client WS Argus · mapping MITRE ATT&CK FR · alertes vocales proactives |
+| **Vue maison 2D** | Floorplan SVG temps réel : pièces, devices, caméras, occupation détectée |
+| **Explainability** | Trace de raisonnement persistée + bouton « Pourquoi ? » dans l'UI + endpoint `/api/explain/last` |
 | **Bus** | Redis Streams (durable + replay) + pub/sub UI temps réel |
-| **Mobile** | PWA installable (manifest + service worker + offline cache GLTF) |
+| **Mobile** | PWA installable + **Web Push notifications natives** (VAPID + service worker) |
 
 ---
 
@@ -267,21 +274,31 @@ Détail du modèle voix-print : [`docs/voiceprint.md`](docs/voiceprint.md).
 
 ### Récemment livré
 
+- **Profils utilisateurs familiaux** multi-membres (rôles, permissions, voix-print et visage par membre)
+- **Skills system** extensible avec hot-reload (5 builtins : time, weather, briefing, routines, presence, explain)
+- **LLM streaming → TTS phrase-par-phrase** (chunker FR + abréviations, latence perçue <500 ms)
+- **Conversation duplex avec barge-in** : couper Jarvis pendant qu'il parle
+- **Briefing matinal intelligent** : météo Open-Meteo + agenda CalDAV + état SOC + IoT
+- **Routines apprises automatiquement** : pattern detection sur observations IoT, propose à l'owner
+- **Mode présence simulée** anti-cambriolage : rejoue actions typiques avec randomisation
+- **Web Push notifications PWA** : VAPID + service worker + UI subscribe
+- **Vue maison 2D** : floorplan SVG temps réel (pièces, devices, caméras, occupation)
+- **Explainability** : trace de raisonnement persistée + bouton « Pourquoi ? » dans l'UI
 - Avatar GLTF haute-fidélité avec 52 blendshapes ARKit + lerp 30 ms + clignement
-- Streaming partial transcripts Whisper, affichés en gris dans l'UI (< 1 s)
 - Liveness AASIST anti-deepfake (gating commandes admin)
-- Zigbee2MQTT integré (commandes + discovery + states sur le bus)
-- Frontend PWA installable (manifest, service worker, offline GLTF cache)
+- Zigbee2MQTT (commandes + discovery + states sur le bus)
 - Manifests Kubernetes/k3s (Kustomize base + overlays prod / rpi)
-- Build multi-arch (amd64 + arm64) + override Raspberry Pi avec limites mémoire
+- Build multi-arch (amd64 + arm64) + override Raspberry Pi
 
 ### À venir
 
-- Streaming token-par-token côté LLM → TTS (latence < 700 ms perçue)
-- Déploiement automatisé via Helm chart (en alternative à Kustomize)
-- Memory-augmented prompting : tirer automatiquement les `n` souvenirs les plus pertinents avant chaque tour
+- Helm chart Kubernetes (en alternative à Kustomize)
+- Memory-augmented prompting : tire les `n` souvenirs les plus pertinents avant chaque tour
 - Z-Wave natif via zwavejs2mqtt (en plus de Zigbee2MQTT)
 - App native (Capacitor) pour intégration plus profonde Android/iOS
+- Multimodal : Claude Vision pour comprendre la caméra en temps réel pendant la voix
+- Multi-room audio : TTS automatiquement routé vers l'enceinte de la pièce occupée
+- Mode "agent autonome" : Jarvis peut chaîner plusieurs tools complexes pour accomplir une tâche
 
 ---
 

@@ -45,10 +45,11 @@ function workletURL(): string {
   return URL.createObjectURL(blob);
 }
 
-/** Lecteur PCM 16-bit mono streaming (22050 Hz Piper / 22050 Hz ElevenLabs PCM). */
+/** Lecteur PCM 16-bit mono streaming, interruptible (barge-in). */
 export class PCMPlayer {
   private ctx: AudioContext;
   private playhead = 0;
+  private sources: AudioBufferSourceNode[] = [];
   constructor(public sampleRate = 22050) {
     this.ctx = new AudioContext({ sampleRate });
     this.playhead = this.ctx.currentTime;
@@ -66,9 +67,26 @@ export class PCMPlayer {
     const startAt = Math.max(this.ctx.currentTime, this.playhead);
     src.start(startAt);
     this.playhead = startAt + buffer.duration;
+    this.sources.push(src);
+    src.onended = () => {
+      const i = this.sources.indexOf(src);
+      if (i >= 0) this.sources.splice(i, 1);
+    };
+  }
+  /** Coupe immédiatement tous les chunks en queue ou en cours. */
+  stop(): void {
+    for (const s of this.sources) {
+      try {
+        s.stop();
+      } catch {
+        // already stopped
+      }
+    }
+    this.sources = [];
+    this.playhead = this.ctx.currentTime;
   }
   reset(): void {
-    this.playhead = this.ctx.currentTime;
+    this.stop();
   }
 }
 

@@ -10,8 +10,10 @@ export function useVoiceWS() {
   const [connected, setConnected] = useState(false);
   const [recording, setRecording] = useState(false);
   const [speaking, setSpeaking] = useState(false);
+  const speakingRef = useRef(false);
   const [viseme, setViseme] = useState<string>("sil");
   const [partial, setPartial] = useState<string>("");
+  const [sessionId, setSessionId] = useState<string>("");
   const [lines, setLines] = useState<Line[]>([]);
 
   const append = (line: Line) => setLines((prev) => [...prev, line].slice(-50));
@@ -26,18 +28,29 @@ export function useVoiceWS() {
     ws.onclose = () => setConnected(false);
     ws.onmessage = (e) => {
       const msg = JSON.parse(e.data);
-      if (msg.type === "transcript") {
+      if (msg.type === "session") {
+        setSessionId(msg.session_id);
+      } else if (msg.type === "transcript") {
         append({ who: "user", text: msg.text, ts: Date.now() });
         setPartial("");
       } else if (msg.type === "transcript_partial") {
         setPartial(msg.text);
+        // barge-in côté UI : si Jarvis parle, on coupe le player
+        if (speakingRef.current) {
+          playerRef.current?.stop();
+          speakingRef.current = false;
+          setSpeaking(false);
+          setViseme("sil");
+        }
       } else if (msg.type === "tts_chunk") {
         if (msg.pcm_b64) playerRef.current?.pushChunk(msg.pcm_b64);
         if (msg.viseme) setViseme(msg.viseme);
         if (msg.is_final) {
+          speakingRef.current = false;
           setSpeaking(false);
           setViseme("sil");
         } else {
+          speakingRef.current = true;
           setSpeaking(true);
         }
       }
@@ -79,6 +92,7 @@ export function useVoiceWS() {
     speaking,
     viseme,
     partial,
+    sessionId,
     lines,
     appendBotLine: (text: string) => append({ who: "bot", text, ts: Date.now() }),
     startRecording,

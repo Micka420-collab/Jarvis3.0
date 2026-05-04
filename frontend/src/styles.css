@@ -61,6 +61,28 @@ main {
   color: rgba(216, 226, 240, 0.55);
 }
 
+button.tab {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--fg);
+  padding: 0.4rem 0.9rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+button.tab.on { background: rgba(76, 201, 240, 0.2); border-color: var(--accent); }
+
+button.link {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--accent);
+  padding: 0.4rem 0.8rem;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+button.link:hover { background: rgba(76, 201, 240, 0.1); }
+
 .avatar-wrap {
   background: rgba(0,0,0,0.25);
   border-radius: 16px;

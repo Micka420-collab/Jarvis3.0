@@ -51,6 +51,7 @@ async def voice_ws(ws: WebSocket) -> None:
     bus = EventBus()
     await bus.connect()
     log.info("voice WS session=%s", session_id)
+    await ws.send_json({"type": "session", "session_id": session_id})
 
     async def forward_transcripts() -> None:
         async for _id, ev in bus.consume(

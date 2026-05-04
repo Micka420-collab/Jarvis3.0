@@ -22,6 +22,8 @@ STREAM_VOICE_TRANSCRIPT = "voice.transcript.ready"
 STREAM_VOICE_TRANSCRIPT_PARTIAL = "voice.transcript.partial"
 STREAM_VOICE_IDENTITY = "voice.identity.verified"
 STREAM_VOICE_LIVENESS = "voice.liveness.checked"
+STREAM_VOICE_BARGE_IN = "voice.barge_in"
+STREAM_INTENT_RESPONSE_PARTIAL = "intent.response.partial"
 STREAM_INTENT_REQUEST = "intent.command.requested"
 STREAM_INTENT_RESPONSE = "intent.response.ready"
 STREAM_TTS_AUDIO_CHUNK = "tts.audio.chunk"
@@ -116,6 +118,21 @@ class IntentResponse(BaseEvent):
     text: str
     emotion: Literal["neutral", "happy", "concerned", "alert"] = "neutral"
     proactive: bool = False  # poussé sans demande utilisateur
+
+
+class IntentResponsePartial(BaseEvent):
+    """Phrase complète extraite d'un stream LLM, prête pour TTS streaming."""
+
+    session_id: str
+    text: str
+    seq: int
+    is_final: bool = False  # dernière phrase de la réponse
+
+
+class VoiceBargeIn(BaseEvent):
+    """L'utilisateur parle pendant que Jarvis répond → couper le TTS courant."""
+
+    session_id: str
 
 
 # ---------------------------------------------------------------------------

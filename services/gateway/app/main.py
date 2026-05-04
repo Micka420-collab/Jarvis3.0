@@ -16,7 +16,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .config import settings
 from .db import close_pool, get_pool
-from .routes import admin, auth as auth_routes, chat, health, iot, security
+from .routes import admin, auth as auth_routes, chat, explain, health, iot, push, security
 from .ws import avatar as avatar_ws, voice as voice_ws
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s — %(message)s")
@@ -50,6 +50,8 @@ app.include_router(auth_routes.router, prefix="/api/auth", tags=["auth"])
 app.include_router(chat.router, prefix="/api/chat", tags=["chat"])
 app.include_router(iot.router, prefix="/api/iot", tags=["iot"])
 app.include_router(security.router, prefix="/api/security", tags=["security"])
+app.include_router(push.router, prefix="/api/push", tags=["push"])
+app.include_router(explain.router, prefix="/api/explain", tags=["explain"])
 app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
 
 # --- WebSockets ---

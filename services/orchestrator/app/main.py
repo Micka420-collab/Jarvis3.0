@@ -26,23 +26,56 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from _shared.bus import EventBus  # noqa: E402
 from _shared.events import (  # noqa: E402
     STREAM_INTENT_RESPONSE,
+    STREAM_INTENT_RESPONSE_PARTIAL,
     STREAM_VOICE_TRANSCRIPT,
     IntentResponse,
+    IntentResponsePartial,
     VoiceTranscriptReady,
 )
 
 from . import challenge  # noqa: E402
 from .identity import IdentityStore, consume_identity_events, consume_liveness_events  # noqa: E402
-from .tools import TOOL_DEFS, dispatch_tool  # noqa: E402
-from .tools.registry import ADMIN_TOOLS  # noqa: E402
+from .skills import registry as skill_registry  # noqa: E402
+from .streaming import stream_sentences  # noqa: E402
+from .tools import dispatch_tool as legacy_dispatch_tool  # noqa: E402
+from .tools.registry import ADMIN_TOOLS as LEGACY_ADMIN_TOOLS  # noqa: E402
+from .tools.registry import TOOL_DEFS as LEGACY_TOOL_DEFS  # noqa: E402
+
+
+def all_tool_defs() -> list[dict]:
+    """Combine les tools legacy (iot, memory, security) et ceux des skills."""
+    out = list(LEGACY_TOOL_DEFS)
+    for t in skill_registry.all_tools():
+        out.append({"name": t.name, "description": t.description, "input_schema": t.input_schema})
+    return out
+
+
+def all_admin_tools() -> set[str]:
+    out = set(LEGACY_ADMIN_TOOLS)
+    for t in skill_registry.all_tools():
+        if t.requires_admin:
+            out.add(t.name)
+    return out
+
+
+async def dispatch_tool(name: str, arguments: dict, ctx: dict) -> Any:
+    """Dispatch unifié : essaie d'abord les skills, sinon retombe sur le legacy."""
+    skill_tool = skill_registry.find_tool(name)
+    if skill_tool is not None:
+        return await skill_tool.handler(arguments, ctx)
+    return await legacy_dispatch_tool(
+        name, arguments, ctx.get("user_id"), bool(ctx.get("is_owner"))
+    )
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s — %(message)s")
 log = logging.getLogger("orchestrator")
 
 LLM_URL = "http://llm:8000/complete"
+LLM_STREAM_URL = "http://llm:8000/complete/stream"
 THRESHOLD_ACCEPT = float(os.getenv("VOICEPRINT_THRESHOLD_ACCEPT", "0.75"))
 THRESHOLD_GREY = float(os.getenv("VOICEPRINT_THRESHOLD_GREY", "0.65"))
 CHALLENGE_ENABLED = os.getenv("VOICEPRINT_CHALLENGE_ENABLED", "true").lower() == "true"
+STREAM_ENABLED = os.getenv("LLM_STREAM_ENABLED", "true").lower() == "true"
 
 # Mémoire courte par session (les N derniers tours)
 _HISTORY: dict[str, list[dict]] = {}
@@ -55,10 +88,87 @@ async def call_llm(messages: list[dict]) -> dict[str, Any]:
     async with httpx.AsyncClient(timeout=60.0) as client:
         r = await client.post(
             LLM_URL,
-            json={"messages": messages, "tools": TOOL_DEFS, "max_tokens": 512},
+            json={"messages": messages, "tools": all_tool_defs(), "max_tokens": 512},
         )
         r.raise_for_status()
         return r.json()
+
+
+async def stream_llm_tokens(messages: list[dict]) -> "Any":
+    """Génère les tokens du LLM en streaming (SSE)."""
+    import json as _json
+
+    async def _gen():
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            async with client.stream(
+                "POST",
+                LLM_STREAM_URL,
+                json={"messages": messages, "max_tokens": 512},
+            ) as r:
+                r.raise_for_status()
+                async for line in r.aiter_lines():
+                    if not line or not line.startswith("data:"):
+                        continue
+                    payload = line[5:].strip()
+                    if not payload:
+                        continue
+                    obj = _json.loads(payload)
+                    if obj.get("done"):
+                        return
+                    if "error" in obj:
+                        log.warning("llm stream error: %s", obj["error"])
+                        return
+                    tok = obj.get("token", "")
+                    if tok:
+                        yield tok
+    return _gen()
+
+
+async def trace_reasoning(
+    session_id: str,
+    user_id: str | None,
+    user_text: str,
+    intent: str,
+    tools_called: list[dict],
+    memory_hits: list[dict],
+    response: str,
+    duration_ms: int,
+) -> None:
+    """Persist trace pour explainability."""
+    import json as _json
+
+    import asyncpg
+
+    try:
+        pool = await asyncpg.create_pool(
+            host=os.getenv("POSTGRES_HOST", "postgres"),
+            port=int(os.getenv("POSTGRES_PORT", "5432")),
+            database=os.getenv("POSTGRES_DB", "jarvis"),
+            user=os.getenv("POSTGRES_USER", "jarvis"),
+            password=os.getenv("POSTGRES_PASSWORD", ""),
+            min_size=1,
+            max_size=1,
+        )
+        async with pool.acquire() as conn:
+            await conn.execute(
+                """
+                INSERT INTO reasoning_traces(
+                    session_id, user_id, user_text, intent,
+                    tools_called, memory_hits, response, duration_ms
+                ) VALUES($1, $2, $3, $4, $5::jsonb, $6::jsonb, $7, $8)
+                """,
+                session_id,
+                user_id,
+                user_text,
+                intent,
+                _json.dumps(tools_called),
+                _json.dumps(memory_hits),
+                response,
+                duration_ms,
+            )
+        await pool.close()
+    except Exception as e:
+        log.warning("trace reasoning failed: %s", e)
 
 
 def _resolve_owner_state(session_id: str) -> tuple[bool, float]:
@@ -76,7 +186,7 @@ def _gate_admin(session_id: str, name: str) -> tuple[bool, str | None]:
     2. La similarité voix-print doit être ≥ accept, sinon zone grise → challenge.
     3. Si challenge déjà passé dans cette session, accepté.
     """
-    if name not in ADMIN_TOOLS:
+    if name not in all_admin_tools():
         return True, None
     cur = identity_store.get(session_id)
     if cur is None:
@@ -138,7 +248,12 @@ async def run_turn(
                 return text_out
 
             owner_now, _ = _resolve_owner_state(session_id)
-            result = await dispatch_tool(tc["name"], args, user_id, is_owner or owner_now)
+            ctx = {
+                "session_id": session_id,
+                "user_id": user_id,
+                "is_owner": is_owner or owner_now,
+            }
+            result = await dispatch_tool(tc["name"], args, ctx)
             history.append(
                 {
                     "role": "tool",
@@ -154,6 +269,8 @@ async def run_turn(
 
 
 async def transcript_loop(bus: EventBus) -> None:
+    import time as _time
+
     async for _id, ev in bus.consume(
         STREAM_VOICE_TRANSCRIPT, "orch", "orch-1", VoiceTranscriptReady
     ):
@@ -161,15 +278,65 @@ async def transcript_loop(bus: EventBus) -> None:
             continue
         try:
             owner_now, _ = _resolve_owner_state(ev.session_id)
-            reply = await run_turn(ev.session_id, None, owner_now, ev.text)
-            await bus.publish(
-                STREAM_INTENT_RESPONSE,
-                IntentResponse(
-                    source="orchestrator",
-                    session_id=ev.session_id,
-                    text=reply,
-                ),
-            )
+            t0 = _time.time()
+            cur = identity_store.get(ev.session_id)
+            user_id = cur.user_id if cur else None
+            tools_called: list[dict] = []
+            memory_hits: list[dict] = []
+
+            history = _HISTORY.setdefault(ev.session_id, [])
+            history.append({"role": "user", "content": ev.text})
+
+            # Si STREAM_ENABLED et pas de tool nécessaire, on streame phrase-par-phrase
+            if STREAM_ENABLED:
+                token_iter = await stream_llm_tokens(history)
+                full_text = ""
+                seq = 0
+                async for sentence in stream_sentences(token_iter):
+                    full_text += sentence + " "
+                    await bus.publish(
+                        STREAM_INTENT_RESPONSE_PARTIAL,
+                        IntentResponsePartial(
+                            source="orchestrator",
+                            session_id=ev.session_id,
+                            text=sentence,
+                            seq=seq,
+                            is_final=False,
+                        ),
+                    )
+                    seq += 1
+                # marqueur final pour fermer le TTS
+                await bus.publish(
+                    STREAM_INTENT_RESPONSE_PARTIAL,
+                    IntentResponsePartial(
+                        source="orchestrator",
+                        session_id=ev.session_id,
+                        text="",
+                        seq=seq,
+                        is_final=True,
+                    ),
+                )
+                history.append({"role": "assistant", "content": full_text.strip()})
+                duration_ms = int((_time.time() - t0) * 1000)
+                await trace_reasoning(
+                    ev.session_id, user_id, ev.text, "stream", tools_called, memory_hits,
+                    full_text.strip(), duration_ms,
+                )
+            else:
+                reply = await run_turn(ev.session_id, user_id, owner_now, ev.text)
+                await bus.publish(
+                    STREAM_INTENT_RESPONSE,
+                    IntentResponse(
+                        source="orchestrator", session_id=ev.session_id, text=reply
+                    ),
+                )
+                duration_ms = int((_time.time() - t0) * 1000)
+                await trace_reasoning(
+                    ev.session_id, user_id, ev.text, "tool_calling",
+                    tools_called, memory_hits, reply, duration_ms,
+                )
+            if len(history) > HISTORY_MAX:
+                del history[: len(history) - HISTORY_MAX]
         except Exception as e:
             log.exception("orchestration failed: %s", e)
 
@@ -178,6 +345,8 @@ async def transcript_loop(bus: EventBus) -> None:
 async def lifespan(app: FastAPI):
     bus = EventBus()
     await bus.connect()
+    skill_registry.load_builtin()
+    skill_registry.load_external("/skills")
     transcript_task = asyncio.create_task(transcript_loop(bus))
     identity_task = asyncio.create_task(consume_identity_events(bus, identity_store))
     liveness_task = asyncio.create_task(consume_liveness_events(bus, identity_store))
@@ -214,6 +383,27 @@ async def orchestrate(req: OrchestrateRequest) -> OrchestrateResponse:
     sid = req.session_id or str(uuid.uuid4())
     reply = await run_turn(sid, req.user_id, req.is_owner, req.text)
     return OrchestrateResponse(session_id=sid, reply=reply)
+
+
+@app.get("/skills")
+async def skills_list() -> dict:
+    return {
+        "skills": [
+            {
+                "name": s.name,
+                "description": s.description,
+                "tools": [t.name for t in s.tools],
+                "crons": [c.name for c in s.crons],
+            }
+            for s in skill_registry.all_skills()
+        ]
+    }
+
+
+@app.post("/skills/reload")
+async def skills_reload() -> dict:
+    skill_registry.reload()
+    return {"status": "reloaded", "count": len(skill_registry.all_skills())}
 
 
 @app.get("/identity")

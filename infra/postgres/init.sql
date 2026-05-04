@@ -5,17 +5,24 @@ CREATE EXTENSION IF NOT EXISTS vector;
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 -- ---------------------------------------------------------------------------
--- Utilisateurs
+-- Utilisateurs (profils familiaux)
 -- ---------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS users (
     id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     username    TEXT NOT NULL UNIQUE,
+    display_name TEXT,
+    avatar_url  TEXT,
     is_owner    BOOLEAN NOT NULL DEFAULT FALSE,
+    role        TEXT NOT NULL DEFAULT 'member' CHECK (role IN ('owner','adult','teen','child','guest')),
+    permissions JSONB NOT NULL DEFAULT '{}'::jsonb,
+    voice_enrolled BOOLEAN NOT NULL DEFAULT FALSE,
+    face_enrolled  BOOLEAN NOT NULL DEFAULT FALSE,
+    push_subscriptions JSONB NOT NULL DEFAULT '[]'::jsonb,  -- VAPID
     created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 -- ---------------------------------------------------------------------------
--- Voix-print (embeddings ECAPA-TDNN 192-d, L2-normalisés)
+-- Voix-print (ECAPA 192-d L2-normalisés) — multi-utilisateurs
 -- ---------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS voiceprints (
     id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -26,6 +33,9 @@ CREATE TABLE IF NOT EXISTS voiceprints (
     updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS voiceprints_user_id_idx ON voiceprints(user_id);
+-- index ANN pour recherche rapide multi-users (HNSW)
+CREATE INDEX IF NOT EXISTS voiceprints_embedding_idx
+    ON voiceprints USING hnsw (embedding vector_cosine_ops);
 
 -- ---------------------------------------------------------------------------
 -- Audit auth
@@ -66,3 +76,67 @@ CREATE TABLE IF NOT EXISTS facts (
 );
 CREATE INDEX IF NOT EXISTS facts_user_id_idx ON facts(user_id);
 CREATE INDEX IF NOT EXISTS facts_tags_idx ON facts USING GIN(tags);
+
+-- ---------------------------------------------------------------------------
+-- Routines (apprises automatiquement ou créées manuellement)
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS routines (
+    id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name        TEXT NOT NULL,
+    trigger     JSONB NOT NULL,    -- {kind: 'time'|'event'|'voice', spec: {...}}
+    actions     JSONB NOT NULL,    -- [{tool, args}]
+    enabled     BOOLEAN NOT NULL DEFAULT TRUE,
+    learned     BOOLEAN NOT NULL DEFAULT FALSE,  -- true si proposée par learning service
+    confidence  REAL DEFAULT 0,    -- score pattern detection
+    created_by  UUID REFERENCES users(id) ON DELETE SET NULL,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    last_run_at TIMESTAMPTZ
+);
+
+-- ---------------------------------------------------------------------------
+-- Observations IoT (pour le pattern detection des routines apprises)
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS observations (
+    id          BIGSERIAL PRIMARY KEY,
+    ts          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    user_id     UUID REFERENCES users(id) ON DELETE SET NULL,
+    kind        TEXT NOT NULL,   -- 'iot_command', 'voice_intent', 'presence', ...
+    device_id   TEXT,
+    action      TEXT,
+    metadata    JSONB DEFAULT '{}'::jsonb,
+    -- weekday/hour pré-calculés pour requêtes pattern rapides
+    weekday     INT,
+    hour        INT
+);
+CREATE INDEX IF NOT EXISTS observations_kind_idx ON observations(kind, ts DESC);
+CREATE INDEX IF NOT EXISTS observations_pattern_idx ON observations(weekday, hour, device_id, action);
+
+-- ---------------------------------------------------------------------------
+-- Mode présence (away mode) — état global
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS presence_state (
+    id          INT PRIMARY KEY DEFAULT 1 CHECK (id = 1),  -- singleton
+    away        BOOLEAN NOT NULL DEFAULT FALSE,
+    away_until  TIMESTAMPTZ,
+    simulate_presence BOOLEAN NOT NULL DEFAULT FALSE,
+    last_seen_owner_at TIMESTAMPTZ,
+    updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+INSERT INTO presence_state (id) VALUES (1) ON CONFLICT DO NOTHING;
+
+-- ---------------------------------------------------------------------------
+-- Trace de raisonnement (explainability)
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS reasoning_traces (
+    id          BIGSERIAL PRIMARY KEY,
+    ts          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    session_id  TEXT,
+    user_id     UUID REFERENCES users(id) ON DELETE SET NULL,
+    user_text   TEXT,
+    intent      TEXT,
+    tools_called JSONB DEFAULT '[]'::jsonb,
+    memory_hits JSONB DEFAULT '[]'::jsonb,
+    response    TEXT,
+    duration_ms INT
+);
+CREATE INDEX IF NOT EXISTS reasoning_session_idx ON reasoning_traces(session_id, ts DESC);

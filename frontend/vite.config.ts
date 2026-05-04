@@ -7,7 +7,10 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["favicon.svg", "robots.txt", "apple-touch-icon.png"],
+      strategies: "generateSW",
+      // injecte le handler push dans le SW généré
+      injectManifest: { swSrc: undefined },
+      includeAssets: ["favicon.svg", "robots.txt", "apple-touch-icon.png", "sw-push.js"],
       manifest: {
         name: "Jarvis 3.0",
         short_name: "Jarvis",
@@ -32,6 +35,8 @@ export default defineConfig({
       workbox: {
         // Pas de cache des appels /api ni /ws (toujours réseau)
         navigateFallbackDenylist: [/^\/api/, /^\/ws/],
+        // ajoute le handler push dans le SW
+        importScripts: ["sw-push.js"],
         runtimeCaching: [
           {
             urlPattern: /\/models\/.*\.glb$/,

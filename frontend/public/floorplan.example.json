@@ -1,0 +1,22 @@
+{
+  "$comment": "Plan 2D de la maison. Coordonnées arbitraires (viewBox 0..1000 x 0..600).",
+  "viewBox": "0 0 1000 600",
+  "rooms": [
+    { "id": "salon", "name": "Salon", "polygon": "10,10 480,10 480,300 10,300", "fill": "#1a2540" },
+    { "id": "cuisine", "name": "Cuisine", "polygon": "490,10 990,10 990,200 490,200", "fill": "#1a2540" },
+    { "id": "chambre", "name": "Chambre", "polygon": "490,210 750,210 750,400 490,400", "fill": "#1a2540" },
+    { "id": "sdb", "name": "Salle de bain", "polygon": "760,210 990,210 990,400 760,400", "fill": "#1a2540" },
+    { "id": "couloir", "name": "Couloir", "polygon": "10,310 480,310 480,400 10,400", "fill": "#15213a" },
+    { "id": "garage", "name": "Garage", "polygon": "10,410 990,410 990,590 10,590", "fill": "#0f1a30" }
+  ],
+  "devices": [
+    { "id": "light.salon", "room": "salon", "kind": "light", "x": 240, "y": 130 },
+    { "id": "cover.volet_salon", "room": "salon", "kind": "cover", "x": 80, "y": 60 },
+    { "id": "light.cuisine", "room": "cuisine", "kind": "light", "x": 720, "y": 100 },
+    { "id": "light.chambre", "room": "chambre", "kind": "light", "x": 620, "y": 300 },
+    { "id": "door.garage", "room": "garage", "kind": "door", "x": 500, "y": 500 }
+  ],
+  "cameras": [
+    { "id": "entree", "room": "garage", "x": 30, "y": 430, "fov": 60, "angle": 30 }
+  ]
+}

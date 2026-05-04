@@ -306,6 +306,24 @@ services:
       - jarvis-net
       - proxmox_lan
 
+  learning:
+    build:
+      context: ./services/learning
+      dockerfile: Dockerfile
+    container_name: jarvis-learning
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./services/learning/app:/app/app:ro
+      - ./services/_shared:/app/_shared:ro
+    networks:
+      - jarvis-net
+
   vision:
     build:
       context: ./services/vision
