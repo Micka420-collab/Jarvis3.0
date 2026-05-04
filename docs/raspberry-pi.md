@@ -55,10 +55,14 @@ $EDITOR .env
 ### 3. Démarrer
 
 ```bash
-make download-models      # Piper voix fr (~50 Mo)
+make download-models      # Piper voix fr (~30 Mo en low / ~50 Mo en medium)
 make up-rpi               # avec les overrides ARM64
 make logs s=voice         # vérifier que Whisper tiny charge bien
 ```
+
+> **Note 1er boot** : la première exécution de `make up-rpi` build localement les images Docker (faster-whisper / CTranslate2 / torch / sentence-transformers) — comptez **15 à 25 minutes** sur Pi 5 SSD, **30 à 45 minutes** sur Pi 4 microSD. Les builds suivants sont incrémentaux (~30 s).
+>
+> Pour éviter le build local, push d'abord les images via `make build-multiarch` depuis un poste x86 (utilise buildx) puis `docker compose pull` sur le Pi.
 
 ### 4. Tester
 
@@ -104,9 +108,30 @@ serial:
   port: /dev/ttyUSB-zigbee
 ```
 
+## Pi 4 (4 Go) : ajustement mémoire
+
+Les `mem_limit` du fichier `docker-compose.rpi.yml` totalisent ~5,9 Go : confortable sur Pi 5 (8 Go), trop juste sur Pi 4 (4 Go). Pour Pi 4, copier le snippet suivant dans `docker-compose.override.yml` pour serrer encore :
+
+```yaml
+services:
+  voice:    { deploy: { resources: { limits: { memory: 1200m } } } }
+  llm:      { deploy: { resources: { limits: { memory: 400m } } } }
+  memory:   { deploy: { resources: { limits: { memory: 700m } } } }
+  orchestrator: { deploy: { resources: { limits: { memory: 300m } } } }
+  postgres: { deploy: { resources: { limits: { memory: 400m } } } }
+  qdrant:   { deploy: { resources: { limits: { memory: 400m } } } }
+  gateway:  { deploy: { resources: { limits: { memory: 300m } } } }
+```
+
+Activer aussi zswap :
+```bash
+sudo sed -i 's/^#zswap.enabled.*/zswap.enabled=1/' /boot/firmware/cmdline.txt
+sudo reboot
+```
+
 ## Limites connues
 
-- **Frigate désactivé par défaut** : le Pi 4 ne tient pas le détecteur sans Coral USB. Sur Pi 5 + Coral, activer avec `make up-rpi-vision` (à faire manuellement avec `--profile vision-rpi`).
+- **Frigate désactivé par défaut** : le Pi 4 ne tient pas le détecteur sans Coral USB. Sur Pi 5 + Coral, activer avec `make up-rpi-vision` (raccourci équivalent à `--profile vision-rpi`).
 - **AASIST liveness** : fonctionne avec onnxruntime CPU, ajouter ~150 ms par utterance.
 - **Avatar GLTF** : prévoir un GLTF léger (textures 512×512) pour fluidité 60 fps.
 

@@ -43,10 +43,12 @@ services:
 
   memory:
     environment:
-      EMBED_MODEL: BAAI/bge-small-en-v1.5  # 33 M params au lieu de bge-m3 (2 Go)
+      # multilingue (FR + EN) ~118 M params, charge ~500 Mo en RAM
+      # vs bge-m3 (multilingue mais ~2 Go RAM)
+      EMBED_MODEL: intfloat/multilingual-e5-small
     deploy:
       resources:
-        limits: { memory: 800m }
+        limits: { memory: 900m }
 
   iot:
     deploy:

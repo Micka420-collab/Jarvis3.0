@@ -85,6 +85,9 @@ up-all:
 up-rpi:
 	$(COMPOSE) -f docker-compose.yml -f docker-compose.rpi.yml up -d
 
+up-rpi-vision:
+	$(COMPOSE) -f docker-compose.yml -f docker-compose.rpi.yml --profile vision-rpi up -d
+
 build-multiarch:
 	@echo "Build multi-arch (amd64 + arm64) — nécessite buildx + login GHCR"
 	docker buildx create --use --name jarvis-builder 2>/dev/null || true

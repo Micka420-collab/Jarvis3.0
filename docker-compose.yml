@@ -280,9 +280,11 @@ services:
     volumes:
       - ./services/iot/app:/app/app:ro
       - ./services/_shared:/app/_shared:ro
-    devices:
-      # commenter si pas d'Arduino branché
-      - /dev/ttyUSB0:/dev/ttyUSB0
+    # Pour brancher un Arduino, créer docker-compose.override.yml :
+    #   services:
+    #     iot:
+    #       devices:
+    #         - /dev/ttyUSB-arduino:/dev/ttyUSB-arduino
     networks:
       - jarvis-net
       - proxmox_lan

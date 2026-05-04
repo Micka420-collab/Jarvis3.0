@@ -8,11 +8,20 @@ mkdir -p "$MODELS_DIR/whisper" "$MODELS_DIR/piper" "$MODELS_DIR/ecapa"
 echo "→ Whisper sera téléchargé automatiquement par faster-whisper au 1er lancement."
 
 PIPER_VOICE="${PIPER_VOICE:-fr_FR-siwis-medium}"
-PIPER_BASE="https://huggingface.co/rhasspy/piper-voices/resolve/main/fr/fr_FR/siwis/medium"
-echo "→ Piper voix : $PIPER_VOICE"
+# format: <lang>_<COUNTRY>-<speaker>-<quality>
+# extraction de la quality (low|medium|high|x_low) à partir du nom
+PIPER_QUALITY="${PIPER_VOICE##*-}"
+PIPER_REST="${PIPER_VOICE%-*}"          # ex: fr_FR-siwis
+PIPER_SPEAKER="${PIPER_REST##*-}"       # ex: siwis
+PIPER_LANG="${PIPER_REST%-*}"           # ex: fr_FR
+PIPER_LANG_FAMILY="${PIPER_LANG%%_*}"   # ex: fr
+PIPER_BASE="https://huggingface.co/rhasspy/piper-voices/resolve/main/${PIPER_LANG_FAMILY}/${PIPER_LANG}/${PIPER_SPEAKER}/${PIPER_QUALITY}"
+echo "→ Piper voix : $PIPER_VOICE  ($PIPER_BASE)"
 if [[ ! -f "$MODELS_DIR/piper/${PIPER_VOICE}.onnx" ]]; then
-  curl -L -o "$MODELS_DIR/piper/${PIPER_VOICE}.onnx" "$PIPER_BASE/${PIPER_VOICE}.onnx"
-  curl -L -o "$MODELS_DIR/piper/${PIPER_VOICE}.onnx.json" "$PIPER_BASE/${PIPER_VOICE}.onnx.json"
+  curl -fL -o "$MODELS_DIR/piper/${PIPER_VOICE}.onnx" "$PIPER_BASE/${PIPER_VOICE}.onnx" \
+    || { echo "  ⚠️  échec download $PIPER_VOICE" ; rm -f "$MODELS_DIR/piper/${PIPER_VOICE}.onnx" ; }
+  curl -fL -o "$MODELS_DIR/piper/${PIPER_VOICE}.onnx.json" "$PIPER_BASE/${PIPER_VOICE}.onnx.json" \
+    || { echo "  ⚠️  échec download ${PIPER_VOICE}.onnx.json" ; rm -f "$MODELS_DIR/piper/${PIPER_VOICE}.onnx.json" ; }
 fi
 
 echo "→ ECAPA-TDNN sera téléchargé par SpeechBrain au 1er lancement vers /models/ecapa"
