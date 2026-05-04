@@ -10,6 +10,7 @@ export function useVoiceWS() {
   const [connected, setConnected] = useState(false);
   const [recording, setRecording] = useState(false);
   const [speaking, setSpeaking] = useState(false);
+  const [viseme, setViseme] = useState<string>("sil");
   const [lines, setLines] = useState<Line[]>([]);
 
   const append = (line: Line) => setLines((prev) => [...prev, line].slice(-50));
@@ -28,8 +29,13 @@ export function useVoiceWS() {
         append({ who: "user", text: msg.text, ts: Date.now() });
       } else if (msg.type === "tts_chunk") {
         if (msg.pcm_b64) playerRef.current?.pushChunk(msg.pcm_b64);
-        if (msg.is_final) setSpeaking(false);
-        else setSpeaking(true);
+        if (msg.viseme) setViseme(msg.viseme);
+        if (msg.is_final) {
+          setSpeaking(false);
+          setViseme("sil");
+        } else {
+          setSpeaking(true);
+        }
       }
     };
     return () => ws.close();
@@ -67,6 +73,7 @@ export function useVoiceWS() {
     connected,
     recording,
     speaking,
+    viseme,
     lines,
     appendBotLine: (text: string) => append({ who: "bot", text, ts: Date.now() }),
     startRecording,

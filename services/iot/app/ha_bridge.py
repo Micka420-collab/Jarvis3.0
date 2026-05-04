@@ -40,3 +40,32 @@ class HABridge:
             )
             r.raise_for_status()
             return r.json()
+
+    async def list_entities(
+        self, domains: tuple[str, ...] = ("light", "switch", "cover", "sensor", "lock")
+    ) -> list[dict]:
+        """Récupère toutes les entités HA des domaines fournis (HA discovery)."""
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            r = await client.get(f"{self.base_url}/api/states", headers=self._headers())
+            r.raise_for_status()
+            states = r.json()
+        out = []
+        for s in states:
+            entity_id = s.get("entity_id", "")
+            if not entity_id:
+                continue
+            domain = entity_id.split(".", 1)[0]
+            if domain not in domains:
+                continue
+            attrs = s.get("attributes") or {}
+            out.append(
+                {
+                    "id": entity_id,
+                    "name": attrs.get("friendly_name") or entity_id,
+                    "transport": "homeassistant",
+                    "config": {"entity_id": entity_id},
+                    "requires_admin": domain == "lock",
+                    "current_state": s.get("state"),
+                }
+            )
+        return out

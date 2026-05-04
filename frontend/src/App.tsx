@@ -24,7 +24,7 @@ export default function App() {
 
       <main>
         <div className="avatar-wrap">
-          <Avatar3D speaking={v.speaking} />
+          <Avatar3D speaking={v.speaking} viseme={v.viseme} />
         </div>
         <div className="transcript">
           {v.lines.length === 0 && <div className="status">Dis "bonjour" ou tape un message…</div>}

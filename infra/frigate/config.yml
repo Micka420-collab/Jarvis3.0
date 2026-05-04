@@ -1,0 +1,60 @@
+# Configuration Frigate exemple pour Jarvis 3.0
+# https://docs.frigate.video/configuration/
+
+mqtt:
+  host: mosquitto
+  port: 1883
+  user: jarvis
+  password: change_me  # → utilise un secret au runtime
+
+# Détecteur CPU par défaut. Active openvino sur CPU Intel pour de meilleures perfs.
+# detectors:
+#   ov:
+#     type: openvino
+#     device: AUTO
+
+ffmpeg:
+  hwaccel_args: preset-vaapi  # commenter si pas d'accel matérielle
+
+cameras:
+  entree:
+    enabled: true
+    ffmpeg:
+      inputs:
+        - path: rtsp://user:password@192.168.1.50:554/stream1
+          roles:
+            - detect
+            - record
+    detect:
+      width: 1280
+      height: 720
+      fps: 5
+    objects:
+      track:
+        - person
+    record:
+      enabled: true
+      retain:
+        days: 3
+        mode: motion
+    snapshots:
+      enabled: true
+      retain:
+        default: 7
+
+  salon:
+    enabled: false
+    ffmpeg:
+      inputs:
+        - path: rtsp://user:password@192.168.1.51:554/stream1
+          roles: [detect]
+    detect:
+      width: 1280
+      height: 720
+      fps: 5
+    objects:
+      track:
+        - person
+
+# Évènements remontés via MQTT et l'API WebSocket /ws — consommés par
+# services/vision/app/frigate_consumer.py

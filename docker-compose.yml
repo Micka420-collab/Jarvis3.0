@@ -16,6 +16,7 @@ volumes:
   mosquitto-log:
   minio-data:
   ollama-data:
+  frigate-media:
 
 services:
 
@@ -118,6 +119,24 @@ services:
     networks:
       - jarvis-net
     # GPU activé par docker-compose.gpu.yml
+
+  # =====================================================================
+  # Vision NVR (optionnel, profile "vision")
+  # =====================================================================
+  frigate:
+    image: ghcr.io/blakeblackshear/frigate:stable
+    container_name: jarvis-frigate
+    restart: unless-stopped
+    profiles: ["vision"]
+    shm_size: "256mb"
+    environment:
+      FRIGATE_RTSP_PASSWORD: "${FRIGATE_RTSP_PASSWORD:-}"
+    volumes:
+      - ./infra/frigate/config.yml:/config/config.yml:ro
+      - frigate-media:/media/frigate
+    networks:
+      - jarvis-net
+      - proxmox_lan
 
   # =====================================================================
   # Services applicatifs
@@ -272,7 +291,8 @@ services:
     volumes:
       - ./services/vision/app:/app/app:ro
       - ./services/_shared:/app/_shared:ro
-      - ./models:/models:ro
+      - ./models:/models:rw  # known_faces écrits par scripts/enroll_face.py
+      - ./scripts:/app/scripts:ro
     networks:
       - jarvis-net
       - proxmox_lan
