@@ -58,6 +58,9 @@ export default function App() {
               Activer les notifications
             </button>
           )}
+          <a className="link" href="/admin" style={{ marginLeft: 12, textDecoration: "none" }}>
+            Admin
+          </a>
         </span>
       </header>
 

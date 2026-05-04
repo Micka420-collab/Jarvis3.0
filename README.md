@@ -108,26 +108,32 @@ Détails et choix techniques : [`docs/architecture.md`](docs/architecture.md).
 - (optionnel) GPU NVIDIA pour Whisper float16 + vision CUDA
 - (optionnel) [Argus](https://github.com/Micka420-collab/Argus) déployé pour les alertes réseau
 
-### Quickstart (5 commandes)
+### Installation en une commande
 
 ```bash
-# 1.  Cloner et configurer
+curl -fsSL https://raw.githubusercontent.com/Micka420-collab/Jarvis3.0/main/install.sh | bash
+```
+
+Le script :
+- détecte ton OS et ton archi (Linux/macOS · amd64/arm64)
+- vérifie Docker (et propose de l'installer si absent)
+- clone (ou met à jour) le dépôt dans `~/Jarvis3.0`
+- génère des secrets aléatoires sécurisés (JWT, Postgres, MQTT, **clés VAPID** pour les push)
+- crée le réseau Docker partagé avec Argus
+- télécharge les modèles Piper, build et lance la stack
+- imprime ton URL d'accès
+
+Une fois terminé : ouvre **`https://jarvis.local`** (assistant) ou **`https://jarvis.local/admin`** (console).
+
+### Installation manuelle (avancée)
+
+```bash
 git clone https://github.com/Micka420-collab/Jarvis3.0.git && cd Jarvis3.0
-cp .env.example .env
-$EDITOR .env                                 # JWT_SECRET, POSTGRES_PASSWORD, OWNER_USERNAME
-
-# 2.  Réseau partagé avec Argus (si déployé)
+cp .env.example .env && $EDITOR .env       # règle les secrets
 docker network create proxmox_lan
-
-# 3.  Modèles (Piper voix fr, Whisper auto-DL au 1er run)
 make download-models
-
-# 4.  Démarrer la stack
-make up                                      # ou : make up-gpu / make up-vision
-
-# 5.  Vérifier
+make up                                     # ou : make up-gpu / make up-vision / make up-rpi
 bash scripts/healthcheck.sh
-open https://jarvis.local
 ```
 
 ### Commandes utiles
