@@ -77,6 +77,8 @@ banner() {
    Connecte un par un tes services à l'IA.
    À chaque étape : Entrée pour skip, ou tape la valeur.
 
+   📘 Guide détaillé pour chaque section : docs/integrations.md
+
 EOF
 }
 

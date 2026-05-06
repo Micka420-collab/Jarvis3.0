@@ -126,6 +126,8 @@ Le script :
 
 Pour relancer le wizard plus tard : `cd ~/Jarvis3.0 && make wizard`. Tu peux aussi tester chaque connexion en live depuis **`/admin → Connexions`**.
 
+📘 **Guide d'intégration détaillé** : [`docs/integrations.md`](docs/integrations.md) explique chaque section (LLM, Home Assistant, Zigbee, Z-Wave, Frigate, Argus, push, multi-room, agents, voix-print) avec prérequis, credentials, vars `.env`, tests et erreurs fréquentes.
+
 Une fois terminé : ouvre **`https://jarvis.local`** (assistant) ou **`https://jarvis.local/admin`** (console).
 
 ### Installation manuelle (avancée)
@@ -279,6 +281,7 @@ Détail du modèle voix-print : [`docs/voiceprint.md`](docs/voiceprint.md).
 - [`docs/raspberry-pi.md`](docs/raspberry-pi.md) — installation et perfs sur Pi 4 / Pi 5
 - [`docs/skills.md`](docs/skills.md) — anatomie d'un plugin et hot-reload
 - [`docs/agents.md`](docs/agents.md) — délégation à Hermes / OpenClaw / MCP
+- [`docs/integrations.md`](docs/integrations.md) — guide complet d'intégration de chaque feature
 
 ---
 
