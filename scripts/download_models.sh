@@ -27,15 +27,17 @@ fi
 echo "→ ECAPA-TDNN sera téléchargé par SpeechBrain au 1er lancement vers /models/ecapa"
 
 # --- AASIST anti-spoofing (optionnel) ---
+# L'URL par défaut pointe sur un repo HF qui peut nécessiter une auth.
+# Skip silencieusement si la variable AASIST_URL n'est pas explicitement fournie
+# par l'utilisateur (le service vision tourne très bien sans liveness check).
 mkdir -p "$MODELS_DIR/aasist"
-AASIST_URL="${AASIST_URL:-https://huggingface.co/cuongdang/aasist-onnx/resolve/main/aasist.onnx}"
-if [[ ! -f "$MODELS_DIR/aasist/aasist.onnx" ]]; then
+if [[ -n "${AASIST_URL:-}" && ! -f "$MODELS_DIR/aasist/aasist.onnx" ]]; then
   echo "→ AASIST anti-deepfake : $AASIST_URL"
-  if curl -fL -o "$MODELS_DIR/aasist/aasist.onnx" "$AASIST_URL"; then
+  if curl -fsSL -o "$MODELS_DIR/aasist/aasist.onnx" "$AASIST_URL" 2>/dev/null; then
     echo "  ✅ AASIST téléchargé"
   else
     rm -f "$MODELS_DIR/aasist/aasist.onnx"
-    echo "  ⚠️  AASIST non téléchargé (URL HF privée ou hors-ligne) — liveness désactivée"
+    echo "  ⚠️  AASIST non téléchargé — liveness désactivée (export AASIST_URL=... pour réessayer)"
   fi
 fi
 
