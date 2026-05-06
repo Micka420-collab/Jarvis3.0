@@ -84,9 +84,10 @@ EOF
 
 section_llm() {
   step "1/11 · LLM (cerveau de Jarvis)"
-  echo "   1) Anthropic Claude (cloud, recommandé qualité)"
-  echo "   2) Ollama (local, sans cloud)"
-  echo "   3) Mistral (cloud, alternative européenne)"
+  echo "   1) Anthropic Claude (cloud, qualité maximale)"
+  echo "   2) OpenRouter (clé unique pour 200+ modèles : Claude, GPT, Llama, Gemini…)"
+  echo "   3) Ollama (local, sans cloud)"
+  echo "   4) Mistral (cloud, alternative européenne)"
   echo "   0) Skip"
   local ch
   ch="$(ask "Choix ?" "1")"
@@ -101,6 +102,23 @@ section_llm() {
       ok "Anthropic configuré"
       ;;
     2)
+      local key model
+      key="$(ask "Clé API OpenRouter (sk-or-v1-...)" "$(get_env OPENROUTER_API_KEY)")"
+      echo "Modèles populaires :"
+      echo "  - anthropic/claude-sonnet-4-6"
+      echo "  - anthropic/claude-opus-4-7"
+      echo "  - openai/gpt-4o"
+      echo "  - meta-llama/llama-3.3-70b-instruct"
+      echo "  - google/gemini-2.0-flash-exp"
+      echo "  - mistralai/mistral-large"
+      model="$(ask "Modèle (slug provider/nom)" "anthropic/claude-sonnet-4-6")"
+      set_env LLM_PROVIDER openrouter
+      set_env OPENROUTER_API_KEY "$key"
+      set_env OPENROUTER_MODEL "$model"
+      set_env LLM_MODEL "$model"
+      ok "OpenRouter configuré"
+      ;;
+    3)
       local model
       model="$(ask "Modèle Ollama" "llama3.1:8b")"
       set_env LLM_PROVIDER ollama
@@ -111,7 +129,7 @@ section_llm() {
       fi
       ok "Ollama configuré"
       ;;
-    3)
+    4)
       local key
       key="$(ask "Clé API Mistral" "$(get_env MISTRAL_API_KEY)")"
       set_env LLM_PROVIDER mistral

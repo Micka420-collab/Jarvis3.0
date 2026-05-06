@@ -1,7 +1,14 @@
 import { useEffect, useState } from "react";
 import { api } from "./api";
 
-type TestKind = "homeassistant" | "argus" | "frigate" | "anthropic" | "ollama" | "mqtt";
+type TestKind =
+  | "homeassistant"
+  | "argus"
+  | "frigate"
+  | "anthropic"
+  | "openrouter"
+  | "ollama"
+  | "mqtt";
 type TestResult = { ok: boolean; detail: string; latency_ms: number };
 
 export function Connections() {
@@ -18,6 +25,8 @@ export function Connections() {
   const [frUrl, setFrUrl] = useState("http://frigate:5000");
   const [anthKey, setAnthKey] = useState("");
   const [anthModel, setAnthModel] = useState("claude-sonnet-4-6");
+  const [orKey, setOrKey] = useState("");
+  const [orModel, setOrModel] = useState("anthropic/claude-sonnet-4-6");
   const [olUrl, setOlUrl] = useState("http://ollama:11434");
 
   const reload = () =>
@@ -137,7 +146,33 @@ export function Connections() {
       </div>
 
       <div className="card">
-        <h3>1bis. LLM Ollama (local)</h3>
+        <h3>1bis. LLM OpenRouter (200+ modèles)</h3>
+        <input
+          placeholder="sk-or-v1-..."
+          value={orKey}
+          onChange={(e) => setOrKey(e.target.value)}
+          type="password"
+        />
+        <input
+          placeholder="anthropic/claude-sonnet-4-6"
+          value={orModel}
+          onChange={(e) => setOrModel(e.target.value)}
+        />
+        <button
+          disabled={busy === "openrouter" || !orKey}
+          onClick={() => test("openrouter", { api_key: orKey, extra: { model: orModel } })}
+        >
+          Tester
+        </button>{" "}
+        <Status kind="openrouter" />
+        <p style={{ fontSize: 11, opacity: 0.6, marginTop: 6 }}>
+          Récupère ta clé sur openrouter.ai/keys · une seule clé pour Claude, GPT,
+          Llama, Gemini, Mistral, etc.
+        </p>
+      </div>
+
+      <div className="card">
+        <h3>1ter. LLM Ollama (local)</h3>
         <input placeholder="http://ollama:11434" value={olUrl} onChange={(e) => setOlUrl(e.target.value)} />
         <button disabled={busy === "ollama"} onClick={() => test("ollama", { url: olUrl })}>
           Tester

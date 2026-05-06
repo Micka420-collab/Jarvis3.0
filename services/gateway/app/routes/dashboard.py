@@ -312,6 +312,23 @@ async def wizard_test(body: TestConnBody, user: Annotated[dict, Depends(require_
                 )
                 ok = r.status_code == 200
                 detail = r.text[:200]
+            elif body.kind == "openrouter":
+                r = await c.post(
+                    "https://openrouter.ai/api/v1/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {body.api_key or ''}",
+                        "Content-Type": "application/json",
+                        "HTTP-Referer": "https://jarvis.local",
+                        "X-Title": "Jarvis 3.0",
+                    },
+                    json={
+                        "model": body.extra.get("model", "anthropic/claude-sonnet-4-6"),
+                        "max_tokens": 8,
+                        "messages": [{"role": "user", "content": "ping"}],
+                    },
+                )
+                ok = r.status_code == 200
+                detail = r.text[:200]
             elif body.kind == "ollama":
                 r = await c.get(f"{body.url or 'http://ollama:11434'}/api/tags")
                 ok, detail = r.status_code == 200, r.text[:200]

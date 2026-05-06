@@ -32,7 +32,29 @@ Modèles recommandés :
 - **Haiku 4.5** (`claude-haiku-4-5-20251001`) : ultra-rapide, briefing matinal
 - **Vision** : `LLM_PROVIDER=anthropic-vision` ajoute la frame caméra Frigate au prompt
 
-### 1.b · Ollama (local, sans cloud)
+### 1.b · OpenRouter (gateway unifié)
+
+Une seule clé pour **200+ modèles** (Claude, GPT, Llama, Gemini, Mistral…). Pratique pour tester plusieurs modèles sans gérer N comptes facturation.
+
+| | |
+|---|---|
+| 🛠 prérequis | compte [openrouter.ai](https://openrouter.ai) avec crédit (paye à l'usage, marge ~5-10%) |
+| 🔑 credentials | API Key sur [openrouter.ai/keys](https://openrouter.ai/keys) |
+| 📝 vars | `LLM_PROVIDER=openrouter` · `OPENROUTER_API_KEY=sk-or-v1-...` · `OPENROUTER_MODEL=anthropic/claude-sonnet-4-6` |
+| ✅ test admin | `/admin → Connexions → 1bis. OpenRouter` |
+| ✅ test CLI | `curl https://openrouter.ai/api/v1/chat/completions -H "Authorization: Bearer $KEY" -d '{"model":"anthropic/claude-sonnet-4-6","messages":[{"role":"user","content":"ping"}],"max_tokens":8}'` |
+
+Modèles populaires (slug `provider/nom`) :
+- `anthropic/claude-opus-4-7` · `anthropic/claude-sonnet-4-6` · `anthropic/claude-haiku-4-5`
+- `openai/gpt-4o` · `openai/gpt-4o-mini`
+- `meta-llama/llama-3.3-70b-instruct` · `meta-llama/llama-3.1-405b-instruct`
+- `google/gemini-2.0-flash-exp` · `google/gemini-pro-1.5`
+- `mistralai/mistral-large` · `mistralai/mixtral-8x22b-instruct`
+- `qwen/qwen-2.5-72b-instruct` · `deepseek/deepseek-chat`
+
+Tu peux switcher de modèle à chaud sans toucher à `.env` : édite `OPENROUTER_MODEL` puis `docker compose restart llm`. Liste complète : [openrouter.ai/models](https://openrouter.ai/models).
+
+### 1.c · Ollama (local, sans cloud)
 
 | | |
 |---|---|
@@ -44,7 +66,7 @@ Modèles recommandés :
 
 Modèles testés sur Pi 5 8 Go : `llama3.2:1b` (5 tok/s), `llama3.2:3b` (1.5 tok/s).
 
-### 1.c · Mistral (cloud Europe)
+### 1.d · Mistral (cloud Europe)
 
 | | |
 |---|---|

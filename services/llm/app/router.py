@@ -17,6 +17,10 @@ def make_adapter(provider: str | None = None) -> LLMAdapter:
         from .adapters.anthropic_vision import AnthropicVisionAdapter
 
         return AnthropicVisionAdapter()
+    if provider == "openrouter":
+        from .adapters.openrouter import OpenRouterAdapter
+
+        return OpenRouterAdapter()
     if provider == "mistral":
         from .adapters.mistral import MistralAdapter
 

@@ -110,6 +110,12 @@ Détails et choix techniques : [`docs/architecture.md`](docs/architecture.md).
 
 ### Installation en une commande
 
+**Ubuntu / Debian (auto-installe Docker)** :
+```bash
+curl -fsSL https://raw.githubusercontent.com/Micka420-collab/Jarvis3.0/main/install-ubuntu.sh | bash
+```
+
+**Autres distros / macOS** (Docker doit être déjà installé) :
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Micka420-collab/Jarvis3.0/main/install.sh | bash
 ```
