@@ -73,11 +73,15 @@ get_env() { grep "^${1}=" "$ENV_FILE" 2>/dev/null | head -n1 | cut -d= -f2- || t
 banner() {
   cat <<'EOF'
 
-   ███████╗  Jarvis 3.0 · Wizard de connexion
-   Connecte un par un tes services à l'IA.
-   À chaque étape : Entrée pour skip, ou tape la valeur.
-
-   📘 Guide détaillé pour chaque section : docs/integrations.md
+   ┌──────────────────────────────────────────────────────────┐
+   │   Jarvis 3.0 · Wizard de connexion                       │
+   │   By Micka Delcato                                       │
+   ├──────────────────────────────────────────────────────────┤
+   │   Connecte un par un tes services à l'IA.                │
+   │   À chaque étape : Entrée pour skip, ou tape la valeur.  │
+   │                                                          │
+   │   📘 Guide détaillé : docs/integrations.md               │
+   └──────────────────────────────────────────────────────────┘
 
 EOF
 }

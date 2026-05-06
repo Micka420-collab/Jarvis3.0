@@ -98,6 +98,29 @@ list-agents:
 wizard:
 	@bash scripts/wizard.sh
 
+# --- Backup / Restore ---
+backup:
+	@bash scripts/backup.sh
+
+restore:
+	@test -n "$(FILE)" || (echo "usage: make restore FILE=backups/jarvis-XXX.tar.gz"; exit 1)
+	@bash scripts/restore.sh $(FILE)
+
+# --- Monitoring ---
+monitoring-up:
+	$(COMPOSE) -f docker-compose.yml -f docker-compose.monitoring.yml up -d prometheus grafana loki promtail cadvisor node-exporter
+
+monitoring-down:
+	$(COMPOSE) -f docker-compose.monitoring.yml down
+
+# --- Tests ---
+test:
+	pytest -q tests/
+
+lint:
+	ruff check services/ scripts/ || true
+	shellcheck install*.sh scripts/*.sh || true
+
 build-multiarch:
 	@echo "Build multi-arch (amd64 + arm64) — nécessite buildx + login GHCR"
 	docker buildx create --use --name jarvis-builder 2>/dev/null || true

@@ -372,15 +372,36 @@ async def barge_in_loop(bus: EventBus) -> None:
         _barge_event(ev.session_id).set()
 
 
+async def vision_presence_loop(bus: EventBus) -> None:
+    """Met à jour SpeakerRouter quand un visage est reconnu sur une caméra.
+
+    Mapping caméra → pièce dans speakers.yaml (clé `cameras`). Si une caméra
+    n'est pas mappée, on ignore l'event silencieusement.
+    """
+    import time as _time
+    from _shared.events import STREAM_VISION_FACE
+
+    async for ev in bus.subscribe(STREAM_VISION_FACE, group="voice-presence"):
+        camera = getattr(ev, "camera", None)
+        if not camera:
+            continue
+        room = speaker_router.room_for_camera(camera)
+        if not room:
+            continue
+        speaker_router.update_presence(room, _time.time())
+        log.debug("presence: %s vu sur %s → room=%s", getattr(ev, "name", "?"), camera, room)
+
+
 async def main() -> None:
     bus = EventBus()
     await bus.connect()
-    log.info("voice service ready")
+    log.info("voice service ready (multi-room rooms=%s)", list(speaker_router.cameras_to_rooms.values()))
     await asyncio.gather(
         stt_loop(bus),
         tts_loop_full(bus),
         tts_loop_partial(bus),
         barge_in_loop(bus),
+        vision_presence_loop(bus),
     )
 
 

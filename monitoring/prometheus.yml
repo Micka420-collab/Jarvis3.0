@@ -1,0 +1,28 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: [localhost:9090]
+
+  - job_name: cadvisor
+    static_configs:
+      - targets: [cadvisor:8080]
+
+  - job_name: node
+    static_configs:
+      - targets: [node-exporter:9100]
+
+  # Microservices Jarvis : ils exposent /metrics via prometheus_client (à activer)
+  - job_name: jarvis-services
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - gateway:8000
+          - orchestrator:8001
+          - iot:8002
+          - security:8003
+          - memory:8004
+          - agents:8005
