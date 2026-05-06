@@ -181,9 +181,49 @@ download_models() {
 
 build_and_up() {
   cd "$INSTALL_DIR"
-  log "Build des images Docker (1ère fois : 5-15 min selon réseau)..."
-  docker compose build --quiet
-  ok "Images build"
+
+  # Vérif espace disque (WSL2 est souvent limité, et containerd plante en I/O error si plein)
+  local free_gb
+  free_gb="$(df -BG --output=avail /var/lib/docker 2>/dev/null | tail -n1 | tr -dc '0-9' || echo 0)"
+  if [ "${free_gb:-0}" -lt 10 ]; then
+    warn "Moins de 10 Go libres sur /var/lib/docker — risque de 'input/output error' au build."
+    warn "WSL2 ? Étends le VHD ou exécute : docker system prune -a -f"
+  fi
+
+  # WSL2 : limite la concurrence BuildKit pour éviter les timeouts containerd
+  if grep -qi microsoft /proc/version 2>/dev/null; then
+    log "WSL2 détecté — limite BuildKit à 2 jobs concurrents."
+    export BUILDKIT_NUM_GOROUTINES=2
+    export DOCKER_BUILDKIT=1
+  fi
+
+  # Build séquentiel : 11 services en parallèle saturent containerd sur WSL2 / petits hôtes.
+  # Plus lent (~+30%) mais robuste — pas de "write /var/lib/containerd/.../meta.db: i/o error".
+  local services=(
+    gateway llm orchestrator memory iot security vision voice learning agents frontend
+  )
+  log "Build des images Docker en séquentiel (1ère fois : 8-20 min)..."
+  local i=0
+  for svc in "${services[@]}"; do
+    i=$((i + 1))
+    printf "  [%2d/%d] build %s ... " "$i" "${#services[@]}" "$svc"
+    if docker compose build --quiet "$svc" 2>/tmp/jarvis-build-err.log; then
+      printf "${C_GREEN}✓${C_RESET}\n"
+    else
+      printf "${C_RED}✗${C_RESET}\n"
+      warn "Build de '$svc' échoué — extrait :"
+      tail -n 20 /tmp/jarvis-build-err.log >&2 || true
+      cat <<EOF
+
+  ${C_YELLOW}Conseils :${C_RESET}
+    • WSL2 : ${C_BLUE}wsl --shutdown${C_RESET} puis relance, ou étends le VHD.
+    • Espace : ${C_BLUE}docker system prune -a --volumes -f${C_RESET}
+    • Reprise : ${C_BLUE}cd $INSTALL_DIR && docker compose build $svc${C_RESET}
+EOF
+      fail "Build interrompu sur '$svc'."
+    fi
+  done
+  ok "Toutes les images build"
 
   log "Démarrage des services..."
   docker compose up -d
