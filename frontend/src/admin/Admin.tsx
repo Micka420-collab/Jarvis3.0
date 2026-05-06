@@ -4,6 +4,7 @@ import { Connections } from "./Connections";
 import { Dashboard } from "./Dashboard";
 import { Devices } from "./Devices";
 import { Login } from "./Login";
+import { RoutineBuilder } from "./RoutineBuilder";
 import { Routines } from "./Routines";
 import { Security } from "./Security";
 import { Skills } from "./Skills";
@@ -17,6 +18,7 @@ type Tab =
   | "users"
   | "devices"
   | "routines"
+  | "builder"
   | "skills"
   | "agents"
   | "security"
@@ -28,6 +30,7 @@ const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: "users", label: "Membres", icon: "👤" },
   { id: "devices", label: "Devices", icon: "⚡" },
   { id: "routines", label: "Routines", icon: "🔁" },
+  { id: "builder", label: "Builder", icon: "🧱" },
   { id: "skills", label: "Skills", icon: "🧩" },
   { id: "agents", label: "Agents", icon: "🤖" },
   { id: "security", label: "Sécurité", icon: "🛡" },
@@ -72,6 +75,7 @@ export function Admin() {
         {tab === "users" && <Users />}
         {tab === "devices" && <Devices />}
         {tab === "routines" && <Routines />}
+        {tab === "builder" && <RoutineBuilder />}
         {tab === "skills" && <Skills />}
         {tab === "agents" && <Agents />}
         {tab === "security" && <Security />}

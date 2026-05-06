@@ -189,6 +189,34 @@ class RoutineToggleBody(BaseModel):
     enabled: bool
 
 
+class RoutineCreateBody(BaseModel):
+    name: str
+    trigger: dict
+    actions: list[dict]
+    enabled: bool = True
+
+
+@router.post("/routines")
+async def create_routine(
+    body: RoutineCreateBody, user: Annotated[dict, Depends(require_owner)]
+) -> dict:
+    import json as _json
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow(
+            """
+            INSERT INTO routines(name, trigger, actions, enabled, learned, confidence)
+            VALUES($1, $2::jsonb, $3::jsonb, $4, FALSE, 1.0)
+            RETURNING id
+            """,
+            body.name,
+            _json.dumps(body.trigger),
+            _json.dumps(body.actions),
+            body.enabled,
+        )
+    return {"id": str(row["id"]), "created": True}
+
+
 @router.patch("/routines/{routine_id}")
 async def toggle_routine(
     routine_id: str,

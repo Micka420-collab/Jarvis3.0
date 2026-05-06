@@ -213,6 +213,18 @@ services:
       - traefik.http.routers.gateway.entrypoints=websecure
       - traefik.http.routers.gateway.tls=true
       - traefik.http.services.gateway.loadbalancer.server.port=8000
+      # --- Rate limiting (60 req/s en moyenne, burst 120) sur le gateway ---
+      - traefik.http.middlewares.gateway-ratelimit.ratelimit.average=60
+      - traefik.http.middlewares.gateway-ratelimit.ratelimit.burst=120
+      - traefik.http.middlewares.gateway-ratelimit.ratelimit.period=1s
+      # --- Headers sécurité (HSTS, no-sniff, frame-deny, CSP basique) ---
+      - traefik.http.middlewares.gateway-secure.headers.stsSeconds=31536000
+      - traefik.http.middlewares.gateway-secure.headers.stsIncludeSubdomains=true
+      - traefik.http.middlewares.gateway-secure.headers.contentTypeNosniff=true
+      - traefik.http.middlewares.gateway-secure.headers.browserXssFilter=true
+      - traefik.http.middlewares.gateway-secure.headers.frameDeny=true
+      - traefik.http.middlewares.gateway-secure.headers.referrerPolicy=strict-origin-when-cross-origin
+      - traefik.http.routers.gateway.middlewares=gateway-ratelimit@docker,gateway-secure@docker
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:8000/api/health"]
       interval: 15s

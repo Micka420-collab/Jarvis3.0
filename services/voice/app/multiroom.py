@@ -38,13 +38,26 @@ def load_speakers() -> dict[str, dict]:
     return {s["id"]: s for s in raw.get("speakers", [])}
 
 
+def load_camera_map() -> dict[str, str]:
+    """camera_id → room. Permet de convertir un event vision.face.recognized
+    en update de présence pour la bonne pièce."""
+    if not SPEAKERS_FILE.exists():
+        return {}
+    raw = yaml.safe_load(SPEAKERS_FILE.read_text(encoding="utf-8")) or {}
+    return raw.get("cameras", {}) or {}
+
+
 class SpeakerRouter:
     def __init__(self) -> None:
         self.speakers = load_speakers()
+        self.cameras_to_rooms = load_camera_map()
         # état : pièce → timestamp de dernière présence
         self._presence_ts: dict[str, float] = {}
         # état : speaker → "idle" | "busy"
         self._busy: dict[str, bool] = {s: False for s in self.speakers}
+
+    def room_for_camera(self, camera: str) -> str | None:
+        return self.cameras_to_rooms.get(camera)
 
     def update_presence(self, room: str, ts: float) -> None:
         self._presence_ts[room] = ts

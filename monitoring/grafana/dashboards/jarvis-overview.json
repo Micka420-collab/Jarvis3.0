@@ -1,0 +1,46 @@
+{
+  "title": "Jarvis · Overview",
+  "uid": "jarvis-overview",
+  "tags": ["jarvis"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "10s",
+  "time": { "from": "now-6h", "to": "now" },
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Containers up",
+      "datasource": "Prometheus",
+      "targets": [{ "expr": "sum(up{job=\"jarvis-services\"})" }],
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 }
+    },
+    {
+      "type": "timeseries",
+      "title": "CPU per container",
+      "datasource": "Prometheus",
+      "targets": [{
+        "expr": "rate(container_cpu_usage_seconds_total{name=~\"jarvis-.*\"}[1m])",
+        "legendFormat": "{{name}}"
+      }],
+      "gridPos": { "h": 8, "w": 12, "x": 6, "y": 0 }
+    },
+    {
+      "type": "timeseries",
+      "title": "Memory per container",
+      "datasource": "Prometheus",
+      "targets": [{
+        "expr": "container_memory_usage_bytes{name=~\"jarvis-.*\"}",
+        "legendFormat": "{{name}}"
+      }],
+      "gridPos": { "h": 8, "w": 12, "x": 6, "y": 8 }
+    },
+    {
+      "type": "logs",
+      "title": "Logs (Loki)",
+      "datasource": "Loki",
+      "targets": [{ "expr": "{container=~\"jarvis-.*\"}" }],
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 16 }
+    }
+  ]
+}

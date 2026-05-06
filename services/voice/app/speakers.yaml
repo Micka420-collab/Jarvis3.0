@@ -3,6 +3,14 @@
 # default: une seule des enceintes peut avoir default=true (utilisée si
 # aucune présence détectée)
 
+# Mapping caméra → pièce. Utilisé pour router le TTS vers la pièce où
+# le visage de l'owner a été reconnu en dernier.
+cameras:
+  cam_salon: salon
+  cam_cuisine: cuisine
+  cam_chambre: chambre
+  cam_entree: entree
+
 speakers:
   - id: browser_main
     name: Navigateur principal (UI Jarvis)

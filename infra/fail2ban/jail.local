@@ -1,0 +1,21 @@
+# Configuration fail2ban pour Jarvis
+# Installer fail2ban sur l'hôte puis copier ce fichier dans /etc/fail2ban/jail.d/jarvis.conf
+
+[jarvis-auth]
+enabled  = true
+port     = http,https
+filter   = jarvis-auth
+logpath  = /var/lib/docker/containers/*/*.log
+maxretry = 5
+findtime = 5m
+bantime  = 1h
+backend  = auto
+
+[jarvis-admin]
+enabled  = true
+port     = http,https
+filter   = jarvis-admin
+logpath  = /var/lib/docker/containers/*/*.log
+maxretry = 3
+findtime = 10m
+bantime  = 24h

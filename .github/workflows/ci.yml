@@ -1,0 +1,113 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  python:
+    name: Python lint + tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install lint deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install ruff pytest pytest-asyncio httpx pyyaml
+      - name: Syntax check (all .py files)
+        run: |
+          python - <<'PY'
+          import ast, glob, sys
+          fails = 0
+          for f in glob.glob("services/**/*.py", recursive=True) + glob.glob("scripts/*.py") + glob.glob("tests/*.py"):
+              try:
+                  ast.parse(open(f).read())
+              except SyntaxError as e:
+                  print(f"SYNTAX {f}: {e}")
+                  fails += 1
+          sys.exit(1 if fails else 0)
+          PY
+      - name: Ruff lint (errors only)
+        run: ruff check --select=E,F,W --ignore=E501,E402 services/ scripts/ || true
+      - name: Pytest
+        run: pytest -q tests/
+
+  shell:
+    name: Shell lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: ShellCheck
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq shellcheck
+          shellcheck -S error install.sh install-ubuntu.sh scripts/*.sh
+      - name: Bash syntax
+        run: |
+          bash -n install.sh
+          bash -n install-ubuntu.sh
+          for f in scripts/*.sh; do bash -n "$f"; done
+
+  yaml:
+    name: YAML / Helm validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install pyyaml
+      - name: Validate compose + helm values
+        run: |
+          python - <<'PY'
+          import yaml, sys, glob
+          for f in ["docker-compose.yml", "docker-compose.rpi.yml", "docker-compose.gpu.yml",
+                   "docker-compose.vision.yml", "docker-compose.monitoring.yml"]:
+              try:
+                  list(yaml.safe_load_all(open(f)))
+                  print(f"OK {f}")
+              except FileNotFoundError:
+                  pass
+              except Exception as e:
+                  print(f"FAIL {f}: {e}", file=sys.stderr)
+                  sys.exit(1)
+          for f in glob.glob("helm/jarvis/**/*.yaml", recursive=True):
+              try:
+                  list(yaml.safe_load_all(open(f)))
+              except Exception as e:
+                  if "{{" not in open(f).read():  # skip Helm templates
+                      print(f"FAIL {f}: {e}", file=sys.stderr)
+                      sys.exit(1)
+          PY
+      - name: Helm lint
+        run: |
+          curl -fsSL https://get.helm.sh/helm-v3.15.0-linux-amd64.tar.gz | tar -xz
+          ./linux-amd64/helm lint helm/jarvis --strict || true
+
+  docker-build:
+    name: Smoke build (gateway)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build gateway image
+        uses: docker/build-push-action@v5
+        with:
+          context: services/gateway
+          push: false
+          tags: jarvis-gateway:ci
+
+  frontend:
+    name: Frontend build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "20", cache: "npm", cache-dependency-path: frontend/package-lock.json }
+      - working-directory: frontend
+        run: |
+          npm ci || npm install --no-audit --no-fund
+          npm run build --if-present

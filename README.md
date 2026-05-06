@@ -288,6 +288,8 @@ Détail du modèle voix-print : [`docs/voiceprint.md`](docs/voiceprint.md).
 - [`docs/skills.md`](docs/skills.md) — anatomie d'un plugin et hot-reload
 - [`docs/agents.md`](docs/agents.md) — délégation à Hermes / OpenClaw / MCP
 - [`docs/integrations.md`](docs/integrations.md) — guide complet d'intégration de chaque feature
+- [`docs/operations.md`](docs/operations.md) — backup, monitoring, rate limiting, fail2ban
+- [`docs/federation.md`](docs/federation.md) — fédération multi-instances (résidence principale ↔ secondaire)
 
 ---
 
@@ -319,14 +321,23 @@ Détail du modèle voix-print : [`docs/voiceprint.md`](docs/voiceprint.md).
 - **Z-Wave natif** via zwave-js-ui (parallèle à Zigbee2MQTT) — discovery + commandes MQTT
 - **App native Capacitor** : iOS + Android, push notifs, splash (`npm run cap:add:android`)
 - **Multimodal Claude Vision** : provider `anthropic-vision` injecte une frame Frigate dans le prompt
-- **Multi-room audio** : `SpeakerRouter` choisit l'enceinte de la pièce occupée (browser/MQTT/Snapcast/HA)
+- **Multi-room audio** : `SpeakerRouter` + mapping caméra→pièce, mise à jour automatique via les events `vision.face.recognized`
 - **Mode agent autonome** : `is_autonomous_request()` détecte les goals complexes et chaîne jusqu'à 8 tool calls
+- **OpenRouter** : provider gateway-unifié (200+ modèles via une seule clé)
+- **Wizard interactif** : `make wizard` — connecte LLM, HA, Zigbee, Z-Wave, Frigate, Argus, agents, voix
+- **Console admin web** : 9 onglets dont Routine Builder visuel
+- **CI GitHub Actions** : lint Python/shell/YAML + tests pytest + smoke build Docker + frontend build
+- **Backup / restore** : Postgres + Qdrant + Redis + configs en tarball, retention + rsync remote
+- **Stack monitoring** : Prometheus + Grafana + Loki + Promtail + cAdvisor + Node Exporter (`make monitoring-up`)
+- **Rate limiting Traefik** : 60 req/s + HSTS + frame-deny + fail2ban
+- **Détection deepfake** : `DeepfakeDetector` (MiniFASNet ONNX + fallback heuristique temporel)
+- **Fédération multi-instances** : service `federation` avec heartbeat HTTP entre peers
 
 ### À venir
 
-- Détection deepfake video pour faux clones de visages devant les caméras
-- Routine builder visuel dans l'admin (drag-and-drop tools)
-- Fédération multi-instances (résidence principale ↔ secondaire)
+- Tests E2E avec mock devices (HA simulé, MQTT testcontainer)
+- Catalog sync fédération v0.2 (devices/routines/users)
+- mTLS entre instances fédérées
 
 ---
 
