@@ -1,0 +1,15 @@
+# Override exemple pour activer un Arduino USB.
+#
+# Usage :
+#   1. Crée l'alias udev (cf. docs/raspberry-pi.md) pour avoir /dev/ttyUSB-arduino
+#   2. Copie ce fichier en docker-compose.override.yml
+#      (Compose le merge automatiquement avec docker-compose.yml)
+#   3. `make up` ou `make up-rpi`
+#
+# Sans alias udev, remplace /dev/ttyUSB-arduino par /dev/ttyUSB0 ou /dev/ttyACM0.
+services:
+  iot:
+    devices:
+      - /dev/ttyUSB-arduino:/dev/ttyUSB-arduino
+    environment:
+      ARDUINO_SERIAL_PORTS: /dev/ttyUSB-arduino

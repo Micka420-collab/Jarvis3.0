@@ -1,0 +1,109 @@
+## values.yaml — paramètres par défaut Helm Jarvis 3.0
+##
+## Override en prod via :
+##   helm install jarvis ./helm/jarvis -f values.prod.yaml
+##
+## Override Pi ARM64 :
+##   helm install jarvis ./helm/jarvis -f helm/jarvis/values.rpi.yaml
+
+global:
+  domain: jarvis.local
+  ownerUsername: mickael
+  imageRegistry: ghcr.io/micka420-collab
+  imageTag: v0.1.0
+  imagePullPolicy: IfNotPresent
+  storageClass: ""
+
+# ConfigMap (variables non sensibles)
+config:
+  llmProvider: ollama
+  llmModel: llama3.1:8b
+  ttsProvider: piper
+  piperVoice: fr_FR-siwis-medium
+  whisperModel: small
+  whisperDevice: cpu
+  whisperComputeType: int8
+  llmStreamEnabled: "true"
+  voiceprintThresholdAccept: "0.75"
+  voiceprintThresholdGrey: "0.65"
+  livenessThreshold: "0.5"
+  briefingCity: Paris
+  learnPatternMinSamples: "5"
+  learnPatternMinDays: "3"
+  agentsEnableMock: "true"
+
+# Secrets — REMPLACE en prod via une Secret externe (sealed-secrets, ESO)
+secrets:
+  jwtSecret: change_me
+  postgresPassword: change_me
+  mqttPassword: change_me
+  anthropicApiKey: ""
+  mistralApiKey: ""
+  elevenlabsApiKey: ""
+  haLongLivedToken: ""
+  argusApiToken: ""
+  vapidPublicKey: ""
+  vapidPrivateKey: ""
+
+# Microservices applicatifs
+services:
+  gateway:
+    enabled: true
+    replicas: 1
+    resources:
+      requests: { cpu: 200m, memory: 256Mi }
+      limits:   { cpu: 1, memory: 512Mi }
+  voice:
+    enabled: true
+    replicas: 1
+    resources:
+      requests: { cpu: 500m, memory: 1Gi }
+      limits:   { cpu: 2, memory: 2Gi }
+  llm:
+    enabled: true
+    replicas: 1
+  orchestrator:
+    enabled: true
+    replicas: 1
+  memory:
+    enabled: true
+  iot:
+    enabled: true
+  security:
+    enabled: true
+  vision:
+    enabled: false  # opt-in
+  learning:
+    enabled: true
+  agents:
+    enabled: false  # opt-in
+  frontend:
+    enabled: true
+
+# Infrastructure (StatefulSets)
+infra:
+  redis:
+    enabled: true
+    storage: 1Gi
+  postgres:
+    enabled: true
+    storage: 5Gi
+    image: pgvector/pgvector:pg16
+  qdrant:
+    enabled: true
+    storage: 5Gi
+  mosquitto:
+    enabled: true
+    storage: 1Gi
+  ollama:
+    enabled: false  # active si tu veux LLM local
+
+# Ingress (k3s = Traefik par défaut)
+ingress:
+  enabled: true
+  className: traefik
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+  tls: true
+  tlsSecretName: jarvis-tls

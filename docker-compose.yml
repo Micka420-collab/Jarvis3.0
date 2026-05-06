@@ -1,0 +1,407 @@
+name: jarvis
+
+networks:
+  jarvis-net:
+    driver: bridge
+  proxmox_lan:
+    external: true
+    # network partagé avec Argus (voir docs/architecture.md)
+    # créé hors de ce compose : `docker network create proxmox_lan`
+
+volumes:
+  postgres-data:
+  redis-data:
+  qdrant-storage:
+  mosquitto-data:
+  mosquitto-log:
+  minio-data:
+  ollama-data:
+  frigate-media:
+  zwave-data:
+
+services:
+
+  # =====================================================================
+  # Reverse proxy + TLS LAN
+  # =====================================================================
+  traefik:
+    image: traefik:v3.1
+    container_name: jarvis-traefik
+    restart: unless-stopped
+    command:
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+      - --api.insecure=true  # dashboard local seulement
+    ports:
+      - "${JARVIS_HTTP_PORT:-80}:80"
+      - "${JARVIS_HTTPS_PORT:-443}:443"
+      - "8080:8080"  # dashboard
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./infra/traefik:/etc/traefik:ro
+    networks:
+      - jarvis-net
+
+  # =====================================================================
+  # Bus interne + DB
+  # =====================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: jarvis-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+    networks:
+      - jarvis-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: jarvis-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./infra/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - jarvis-net
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "${POSTGRES_USER}", "-d", "${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  qdrant:
+    image: qdrant/qdrant:v1.11.0
+    container_name: jarvis-qdrant
+    restart: unless-stopped
+    volumes:
+      - qdrant-storage:/qdrant/storage
+    networks:
+      - jarvis-net
+
+  # =====================================================================
+  # IoT
+  # =====================================================================
+  mosquitto:
+    image: eclipse-mosquitto:2
+    container_name: jarvis-mosquitto
+    restart: unless-stopped
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - ./infra/mosquitto/config:/mosquitto/config:ro
+      - mosquitto-data:/mosquitto/data
+      - mosquitto-log:/mosquitto/log
+    networks:
+      - jarvis-net
+      - proxmox_lan
+
+  zwave-js-ui:
+    image: zwavejs/zwave-js-ui:latest
+    container_name: jarvis-zwave
+    restart: unless-stopped
+    profiles: ["zwave"]
+    environment:
+      TZ: "${TZ:-Europe/Paris}"
+    devices:
+      - /dev/ttyUSB-zwave:/dev/ttyUSB-zwave
+    volumes:
+      - zwave-data:/usr/src/app/store
+    networks:
+      - jarvis-net
+      - proxmox_lan
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.zwave.rule=Host(`zwave.${JARVIS_DOMAIN}`)
+      - traefik.http.routers.zwave.entrypoints=websecure
+      - traefik.http.routers.zwave.tls=true
+      - traefik.http.services.zwave.loadbalancer.server.port=8091
+
+  zigbee2mqtt:
+    image: koenkk/zigbee2mqtt:latest
+    container_name: jarvis-zigbee2mqtt
+    restart: unless-stopped
+    profiles: ["zigbee"]
+    depends_on:
+      - mosquitto
+    volumes:
+      - ./infra/zigbee2mqtt/configuration.yaml:/app/data/configuration.yaml
+      - ./infra/zigbee2mqtt/data:/app/data
+      - /run/udev:/run/udev:ro
+    devices:
+      # alias udev recommandé : /dev/ttyUSB-zigbee
+      - /dev/ttyUSB-zigbee:/dev/ttyUSB-zigbee
+    environment:
+      TZ: "${TZ:-Europe/Paris}"
+    networks:
+      - jarvis-net
+      - proxmox_lan
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.z2m.rule=Host(`z2m.${JARVIS_DOMAIN}`)
+      - traefik.http.routers.z2m.entrypoints=websecure
+      - traefik.http.routers.z2m.tls=true
+      - traefik.http.services.z2m.loadbalancer.server.port=8080
+
+  # =====================================================================
+  # LLM local (Ollama)
+  # =====================================================================
+  ollama:
+    image: ollama/ollama:latest
+    container_name: jarvis-ollama
+    restart: unless-stopped
+    volumes:
+      - ollama-data:/root/.ollama
+    networks:
+      - jarvis-net
+    # GPU activé par docker-compose.gpu.yml
+
+  # =====================================================================
+  # Vision NVR (optionnel, profile "vision")
+  # =====================================================================
+  frigate:
+    image: ghcr.io/blakeblackshear/frigate:stable
+    container_name: jarvis-frigate
+    restart: unless-stopped
+    profiles: ["vision"]
+    shm_size: "256mb"
+    environment:
+      FRIGATE_RTSP_PASSWORD: "${FRIGATE_RTSP_PASSWORD:-}"
+    volumes:
+      - ./infra/frigate/config.yml:/config/config.yml:ro
+      - frigate-media:/media/frigate
+    networks:
+      - jarvis-net
+      - proxmox_lan
+
+  # =====================================================================
+  # Services applicatifs
+  # =====================================================================
+  gateway:
+    build:
+      context: ./services/gateway
+      dockerfile: Dockerfile
+    container_name: jarvis-gateway
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./services/gateway/app:/app/app:ro
+      - ./services/_shared:/app/_shared:ro
+      - ./tests:/app/tests:ro
+    networks:
+      - jarvis-net
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.gateway.rule=Host(`${JARVIS_DOMAIN}`)
+      - traefik.http.routers.gateway.entrypoints=websecure
+      - traefik.http.routers.gateway.tls=true
+      - traefik.http.services.gateway.loadbalancer.server.port=8000
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/api/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  voice:
+    build:
+      context: ./services/voice
+      dockerfile: Dockerfile
+    container_name: jarvis-voice
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./services/voice/app:/app/app:ro
+      - ./services/_shared:/app/_shared:ro
+      - ./models:/models:ro
+      - ./scripts:/app/scripts:ro
+    networks:
+      - jarvis-net
+
+  llm:
+    build:
+      context: ./services/llm
+      dockerfile: Dockerfile
+    container_name: jarvis-llm
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./services/llm/app:/app/app:ro
+      - ./services/_shared:/app/_shared:ro
+    networks:
+      - jarvis-net
+
+  memory:
+    build:
+      context: ./services/memory
+      dockerfile: Dockerfile
+    container_name: jarvis-memory
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      qdrant:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./services/memory/app:/app/app:ro
+      - ./services/_shared:/app/_shared:ro
+    networks:
+      - jarvis-net
+
+  orchestrator:
+    build:
+      context: ./services/orchestrator
+      dockerfile: Dockerfile
+    container_name: jarvis-orchestrator
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./services/orchestrator/app:/app/app:ro
+      - ./services/_shared:/app/_shared:ro
+    networks:
+      - jarvis-net
+
+  iot:
+    build:
+      context: ./services/iot
+      dockerfile: Dockerfile
+    container_name: jarvis-iot
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      mosquitto:
+        condition: service_started
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./services/iot/app:/app/app:ro
+      - ./services/_shared:/app/_shared:ro
+    # Pour brancher un Arduino, créer docker-compose.override.yml :
+    #   services:
+    #     iot:
+    #       devices:
+    #         - /dev/ttyUSB-arduino:/dev/ttyUSB-arduino
+    networks:
+      - jarvis-net
+      - proxmox_lan
+
+  security:
+    build:
+      context: ./services/security
+      dockerfile: Dockerfile
+    container_name: jarvis-security
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./services/security/app:/app/app:ro
+      - ./services/_shared:/app/_shared:ro
+    networks:
+      - jarvis-net
+      - proxmox_lan
+
+  learning:
+    build:
+      context: ./services/learning
+      dockerfile: Dockerfile
+    container_name: jarvis-learning
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./services/learning/app:/app/app:ro
+      - ./services/_shared:/app/_shared:ro
+    networks:
+      - jarvis-net
+
+  agents:
+    build:
+      context: ./services/agents
+      dockerfile: Dockerfile
+      args:
+        # `make build-agents-full` pour activer ces deux flags
+        INSTALL_HERMES: "${INSTALL_HERMES:-false}"
+        INSTALL_OPENCLAW: "${INSTALL_OPENCLAW:-false}"
+    container_name: jarvis-agents
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./services/agents/app:/app/app:ro
+      - ./services/_shared:/app/_shared:ro
+      # Exemple : monter le home de l'owner pour que les agents puissent lire ses fichiers.
+      # ATTENTION SÉCURITÉ : voir docs/agents.md
+      # - /home/${OWNER_USERNAME}:/home/owner
+    networks:
+      - jarvis-net
+
+  vision:
+    build:
+      context: ./services/vision
+      dockerfile: Dockerfile
+    container_name: jarvis-vision
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./services/vision/app:/app/app:ro
+      - ./services/_shared:/app/_shared:ro
+      - ./models:/models:rw  # known_faces écrits par scripts/enroll_face.py
+      - ./scripts:/app/scripts:ro
+    networks:
+      - jarvis-net
+      - proxmox_lan
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: jarvis-frontend
+    restart: unless-stopped
+    networks:
+      - jarvis-net
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.frontend.rule=Host(`${JARVIS_DOMAIN}`) && PathPrefix(`/`)
+      - traefik.http.routers.frontend.priority=1
+      - traefik.http.routers.frontend.entrypoints=websecure
+      - traefik.http.routers.frontend.tls=true
+      - traefik.http.services.frontend.loadbalancer.server.port=80

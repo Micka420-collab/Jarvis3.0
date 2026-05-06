@@ -1,0 +1,33 @@
+# k3s embarque Traefik IngressController par défaut.
+# L'Ingress route :
+#   /        → frontend (nginx)
+#   /api/*   → gateway
+#   /ws/*    → gateway (websockets)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: jarvis
+  namespace: jarvis
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+spec:
+  rules:
+    - host: jarvis.local
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service: { name: gateway, port: { number: 8000 } }
+          - path: /ws
+            pathType: Prefix
+            backend:
+              service: { name: gateway, port: { number: 8000 } }
+          - path: /
+            pathType: Prefix
+            backend:
+              service: { name: frontend, port: { number: 80 } }
+  tls:
+    - hosts: [jarvis.local]
+      secretName: jarvis-tls   # à fournir (cert-manager ou auto-generated par traefik)

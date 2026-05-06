@@ -1,0 +1,18 @@
+# Configuration Traefik statique (chargée au boot)
+# Ajouter ici les configurations TLS personnalisées si besoin.
+# La majeure partie de la conf vient des labels Docker dans docker-compose.yml.
+
+api:
+  dashboard: true
+  insecure: true
+
+entryPoints:
+  web:
+    address: ":80"
+  websecure:
+    address: ":443"
+
+providers:
+  docker:
+    exposedByDefault: false
+    network: jarvis-net

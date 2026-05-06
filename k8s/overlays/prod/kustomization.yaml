@@ -1,0 +1,23 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: jarvis
+
+resources:
+  - ../../base
+
+# Image tags pinned for prod
+images:
+  - { name: ghcr.io/micka420-collab/jarvis-gateway,      newTag: v0.1.0 }
+  - { name: ghcr.io/micka420-collab/jarvis-voice,        newTag: v0.1.0 }
+  - { name: ghcr.io/micka420-collab/jarvis-llm,          newTag: v0.1.0 }
+  - { name: ghcr.io/micka420-collab/jarvis-orchestrator, newTag: v0.1.0 }
+  - { name: ghcr.io/micka420-collab/jarvis-memory,       newTag: v0.1.0 }
+  - { name: ghcr.io/micka420-collab/jarvis-iot,          newTag: v0.1.0 }
+  - { name: ghcr.io/micka420-collab/jarvis-security,     newTag: v0.1.0 }
+  - { name: ghcr.io/micka420-collab/jarvis-vision,       newTag: v0.1.0 }
+  - { name: ghcr.io/micka420-collab/jarvis-frontend,     newTag: v0.1.0 }
+
+replicas:
+  - { name: gateway, count: 2 }
+  - { name: orchestrator, count: 2 }

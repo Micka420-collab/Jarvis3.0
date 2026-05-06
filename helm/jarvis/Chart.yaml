@@ -1,0 +1,16 @@
+apiVersion: v2
+name: jarvis
+description: Jarvis 3.0 — assistant domotique auto-hébergé
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+home: https://github.com/Micka420-collab/Jarvis3.0
+sources:
+  - https://github.com/Micka420-collab/Jarvis3.0
+keywords:
+  - home-automation
+  - voice-assistant
+  - llm
+  - iot
+maintainers:
+  - name: Micka420-collab

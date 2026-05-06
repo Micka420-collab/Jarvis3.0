@@ -1,0 +1,56 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Node
+node_modules/
+dist/
+.vite/
+.eslintcache
+*.log
+
+# Models (lourd, téléchargés via scripts/download_models.sh)
+models/whisper/*
+models/piper/*
+models/ecapa/*
+models/*.glb
+!models/whisper/.gitkeep
+!models/piper/.gitkeep
+!models/ecapa/.gitkeep
+
+# Secrets
+.env
+.env.local
+*.key
+*.pem
+*.crt
+
+# Données runtime
+data/
+volumes/
+postgres-data/
+qdrant-storage/
+mosquitto-data/
+redis-data/
+minio-data/
+frigate-media/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Logs
+logs/
+*.log

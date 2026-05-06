@@ -1,0 +1,249 @@
+/* === Admin console === */
+
+.admin-shell {
+  display: flex;
+  min-height: 100vh;
+  background: #0a0e14;
+  color: var(--fg);
+  font-size: 14px;
+}
+
+.admin-nav {
+  width: 220px;
+  background: rgba(0, 0, 0, 0.4);
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 1rem 0.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.brand-mini {
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  color: var(--accent);
+  font-weight: 700;
+  padding: 0 0.5rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  margin-bottom: 0.5rem;
+}
+
+.admin-nav .navlink {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--fg);
+  text-align: left;
+  padding: 0.55rem 0.8rem;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  text-decoration: none;
+  font-size: 13px;
+}
+.admin-nav .navlink:hover { background: rgba(255, 255, 255, 0.04); }
+.admin-nav .navlink.on {
+  background: rgba(76, 201, 240, 0.12);
+  border-color: rgba(76, 201, 240, 0.4);
+  color: var(--accent);
+}
+.admin-nav .ico { width: 20px; opacity: 0.85; }
+
+.admin-main {
+  flex: 1;
+  padding: 1.2rem 1.6rem;
+  overflow-y: auto;
+}
+
+.admin-main h2 { margin: 0 0 1rem; font-size: 1.4rem; }
+.admin-main h3 { margin: 1rem 0 0.6rem; font-size: 1.05rem; }
+
+.admin-main .card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  padding: 1rem 1.1rem;
+  margin-bottom: 1rem;
+}
+
+/* Login */
+.login {
+  max-width: 360px;
+  margin: 8vh auto;
+  padding: 2rem;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 12px;
+  border: 1px solid rgba(76, 201, 240, 0.2);
+}
+.login h1 { margin: 0 0 0.6rem; }
+.login form { display: flex; gap: 0.6rem; margin-top: 1rem; }
+.login input {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--fg);
+  padding: 0.55rem 0.8rem;
+  border-radius: 8px;
+}
+.login button {
+  background: var(--accent);
+  border: none;
+  color: #0a0e14;
+  padding: 0.55rem 0.9rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+/* Dashboard */
+.service-grid, .kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.8rem;
+  margin-top: 0.6rem;
+}
+
+.service {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 0.6rem 0.9rem;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.service .dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #ef4444;
+}
+.service.ok .dot { background: #22c55e; box-shadow: 0 0 8px #22c55e; }
+
+.kpi {
+  background: rgba(76, 201, 240, 0.06);
+  border: 1px solid rgba(76, 201, 240, 0.18);
+  border-radius: 10px;
+  padding: 1rem;
+  text-align: center;
+}
+.kpi-value { font-size: 2rem; font-weight: 700; color: var(--accent); }
+.kpi-label { font-size: 12px; opacity: 0.7; }
+
+/* Tables */
+.grid {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.5rem;
+}
+.grid th, .grid td {
+  padding: 0.55rem 0.7rem;
+  text-align: left;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  font-size: 13px;
+}
+.grid th {
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  opacity: 0.6;
+}
+.grid tbody tr:hover { background: rgba(255, 255, 255, 0.03); }
+
+/* Boutons admin */
+.admin-main button {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--fg);
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  margin-right: 4px;
+}
+.admin-main button:hover:not(:disabled) {
+  background: rgba(76, 201, 240, 0.15);
+  border-color: var(--accent);
+}
+.admin-main button:disabled { opacity: 0.4; cursor: not-allowed; }
+.admin-main input, .admin-main select, .admin-main textarea {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--fg);
+  padding: 0.4rem 0.6rem;
+  border-radius: 6px;
+  font-size: 13px;
+  margin: 4px 4px 4px 0;
+  width: auto;
+}
+.admin-main textarea { width: 100%; resize: vertical; font-family: inherit; }
+
+.row-actions {
+  display: flex;
+  gap: 0.6rem;
+  align-items: baseline;
+  margin-bottom: 0.6rem;
+}
+.row-actions h2 { margin: 0; flex: 1; }
+
+/* Modal créer user */
+.modal {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(76, 201, 240, 0.4);
+  padding: 1rem;
+  border-radius: 10px;
+  margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  max-width: 400px;
+}
+.modal-actions { display: flex; gap: 0.5rem; margin-top: 0.5rem; }
+
+/* Routine row */
+.routine {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 0.7rem 1rem;
+  border-radius: 8px;
+  margin-bottom: 0.4rem;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Badges */
+.badge {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--fg);
+  letter-spacing: 0.04em;
+}
+.badge.tr-mqtt          { background: rgba(76, 201, 240, 0.18); color: var(--accent); }
+.badge.tr-homeassistant { background: rgba(64, 192, 87, 0.18); color: #5cd680; }
+.badge.tr-serial        { background: rgba(247, 37, 133, 0.18); color: #ff7eb3; }
+.badge.tr-zigbee2mqtt   { background: rgba(248, 158, 73, 0.18); color: #ffba78; }
+.badge.status-running    { background: rgba(76, 201, 240, 0.2); color: var(--accent); }
+.badge.status-completed  { background: rgba(64, 192, 87, 0.2); color: #5cd680; }
+.badge.status-failed     { background: rgba(239, 68, 68, 0.2); color: #ff8585; }
+.badge.status-cancelled  { background: rgba(160, 160, 160, 0.2); color: #c0c0c0; }
+
+.error {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #ff8585;
+  padding: 0.6rem 0.9rem;
+  border-radius: 8px;
+  margin-bottom: 0.8rem;
+  font-size: 13px;
+}
+
+@media (max-width: 768px) {
+  .admin-nav { width: 56px; }
+  .admin-nav .navlink span:not(.ico) { display: none; }
+  .brand-mini { display: none; }
+}

@@ -1,0 +1,56 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mosquitto-config
+  namespace: jarvis
+data:
+  mosquitto.conf: |
+    persistence true
+    persistence_location /mosquitto/data/
+    log_dest stdout
+    listener 1883
+    allow_anonymous true   # remplacer par allow_anonymous false + password_file en prod
+    listener 9001
+    protocol websockets
+    allow_anonymous true
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mosquitto
+  namespace: jarvis
+spec:
+  serviceName: mosquitto
+  replicas: 1
+  selector: { matchLabels: { app: mosquitto } }
+  template:
+    metadata: { labels: { app: mosquitto } }
+    spec:
+      containers:
+        - name: mosquitto
+          image: eclipse-mosquitto:2
+          ports:
+            - { containerPort: 1883 }
+            - { containerPort: 9001 }
+          volumeMounts:
+            - { name: data, mountPath: /mosquitto/data }
+            - { name: config, mountPath: /mosquitto/config, readOnly: true }
+      volumes:
+        - name: config
+          configMap: { name: mosquitto-config }
+  volumeClaimTemplates:
+    - metadata: { name: data }
+      spec:
+        accessModes: [ReadWriteOnce]
+        resources: { requests: { storage: 1Gi } }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mosquitto
+  namespace: jarvis
+spec:
+  selector: { app: mosquitto }
+  ports:
+    - { name: mqtt, port: 1883, targetPort: 1883 }
+    - { name: ws,   port: 9001, targetPort: 9001 }

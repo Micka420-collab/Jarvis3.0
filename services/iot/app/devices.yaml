@@ -1,0 +1,27 @@
+# Registre unifié des devices IoT
+# Chaque device a un transport: mqtt | homeassistant | serial
+# requires_admin = true pour les actions sensibles (porte, garage, alarme)
+
+devices:
+  - id: light.salon
+    name: Lumière salon
+    transport: homeassistant
+    config:
+      entity_id: light.salon
+    requires_admin: false
+
+  - id: cover.volet_salon
+    name: Volet salon
+    transport: mqtt
+    config:
+      cmd_topic: jarvis/devices/volet_salon/cmd
+      state_topic: jarvis/devices/volet_salon/state
+    requires_admin: false
+
+  - id: door.garage
+    name: Porte garage
+    transport: serial
+    config:
+      port: /dev/ttyUSB0
+      protocol_id: garage_door
+    requires_admin: true

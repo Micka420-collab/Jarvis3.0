@@ -1,0 +1,38 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: jarvis
+
+resources:
+  - ../../base
+
+# Profil Raspberry Pi (ARM64) :
+# - 1 seul replica par service
+# - Modèles plus légers (Whisper tiny, Llama 3.2:1b)
+# - Vision désactivée par défaut (Frigate trop lourd sur Pi 4 sans coral)
+images:
+  - { name: ghcr.io/micka420-collab/jarvis-gateway,      newTag: v0.1.0-arm64 }
+  - { name: ghcr.io/micka420-collab/jarvis-voice,        newTag: v0.1.0-arm64 }
+  - { name: ghcr.io/micka420-collab/jarvis-llm,          newTag: v0.1.0-arm64 }
+  - { name: ghcr.io/micka420-collab/jarvis-orchestrator, newTag: v0.1.0-arm64 }
+  - { name: ghcr.io/micka420-collab/jarvis-memory,       newTag: v0.1.0-arm64 }
+  - { name: ghcr.io/micka420-collab/jarvis-iot,          newTag: v0.1.0-arm64 }
+  - { name: ghcr.io/micka420-collab/jarvis-security,     newTag: v0.1.0-arm64 }
+  - { name: ghcr.io/micka420-collab/jarvis-frontend,     newTag: v0.1.0-arm64 }
+
+# Désactive le déploiement vision (le service n'aura pas son StatefulSet)
+patches:
+  - target: { kind: Deployment, name: vision }
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 0
+
+configMapGenerator:
+  - name: jarvis-config
+    behavior: merge
+    literals:
+      - WHISPER_MODEL=tiny
+      - WHISPER_COMPUTE_TYPE=int8
+      - LLM_MODEL=llama3.2:1b
+      - PIPER_VOICE=fr_FR-siwis-low

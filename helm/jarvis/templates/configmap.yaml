@@ -1,0 +1,36 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: jarvis-config
+  labels: {{- include "jarvis.labels" . | nindent 4 }}
+data:
+  JARVIS_DOMAIN: {{ .Values.global.domain | quote }}
+  OWNER_USERNAME: {{ .Values.global.ownerUsername | quote }}
+  REDIS_HOST: redis
+  REDIS_PORT: "6379"
+  POSTGRES_HOST: postgres
+  POSTGRES_PORT: "5432"
+  POSTGRES_DB: jarvis
+  POSTGRES_USER: jarvis
+  QDRANT_HOST: qdrant
+  QDRANT_PORT: "6333"
+  QDRANT_COLLECTION: conversations
+  MQTT_HOST: mosquitto
+  MQTT_PORT: "1883"
+  MQTT_USERNAME: jarvis
+  LLM_PROVIDER: {{ .Values.config.llmProvider | quote }}
+  LLM_MODEL: {{ .Values.config.llmModel | quote }}
+  OLLAMA_HOST: http://ollama:11434
+  TTS_PROVIDER: {{ .Values.config.ttsProvider | quote }}
+  PIPER_VOICE: {{ .Values.config.piperVoice | quote }}
+  WHISPER_MODEL: {{ .Values.config.whisperModel | quote }}
+  WHISPER_DEVICE: {{ .Values.config.whisperDevice | quote }}
+  WHISPER_COMPUTE_TYPE: {{ .Values.config.whisperComputeType | quote }}
+  LLM_STREAM_ENABLED: {{ .Values.config.llmStreamEnabled | quote }}
+  VOICEPRINT_THRESHOLD_ACCEPT: {{ .Values.config.voiceprintThresholdAccept | quote }}
+  VOICEPRINT_THRESHOLD_GREY: {{ .Values.config.voiceprintThresholdGrey | quote }}
+  LIVENESS_THRESHOLD: {{ .Values.config.livenessThreshold | quote }}
+  BRIEFING_CITY: {{ .Values.config.briefingCity | quote }}
+  LEARN_PATTERN_MIN_SAMPLES: {{ .Values.config.learnPatternMinSamples | quote }}
+  LEARN_PATTERN_MIN_DAYS: {{ .Values.config.learnPatternMinDays | quote }}
+  AGENTS_ENABLE_MOCK: {{ .Values.config.agentsEnableMock | quote }}

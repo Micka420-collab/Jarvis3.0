@@ -1,0 +1,20 @@
+## Override Helm pour Raspberry Pi (ARM64)
+global:
+  imageTag: v0.1.0-arm64
+
+config:
+  whisperModel: tiny
+  whisperComputeType: int8
+  llmModel: llama3.2:1b
+  piperVoice: fr_FR-siwis-low
+
+services:
+  vision: { enabled: false }
+  agents: { enabled: false }
+  voice:
+    resources:
+      requests: { cpu: 250m, memory: 600Mi }
+      limits:   { cpu: 1, memory: 1200Mi }
+
+infra:
+  ollama: { enabled: false }   # cloud Anthropic plus efficace sur Pi
