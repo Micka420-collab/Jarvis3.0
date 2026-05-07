@@ -1,0 +1,42 @@
+# CODEOWNERS — qui review quoi par défaut.
+# Doc : https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-security/customizing-your-repository/about-code-owners
+
+# Tout le repo par défaut
+*                                    @Micka420-collab
+
+# Services par domaine
+/services/voice/                     @Micka420-collab
+/services/llm/                       @Micka420-collab
+/services/orchestrator/              @Micka420-collab
+/services/memory/                    @Micka420-collab
+/services/iot/                       @Micka420-collab
+/services/security/                  @Micka420-collab
+/services/vision/                    @Micka420-collab
+/services/agents/                    @Micka420-collab
+/services/federation/                @Micka420-collab
+
+# Frontend
+/frontend/                           @Micka420-collab
+
+# Infra
+/helm/                                @Micka420-collab
+/docker-compose*.yml                  @Micka420-collab
+/Dockerfile                           @Micka420-collab
+/install*.sh                          @Micka420-collab
+/scripts/                             @Micka420-collab
+
+# Sécurité (review obligatoire pour ces zones sensibles)
+/services/gateway/app/auth.py        @Micka420-collab
+/services/voice/app/voiceprint*.py   @Micka420-collab
+/services/security/                   @Micka420-collab
+/.github/SECURITY.md                  @Micka420-collab
+
+# CI / outillage
+/.github/                             @Micka420-collab
+/Makefile                             @Micka420-collab
+/pytest.ini                           @Micka420-collab
+
+# Documentation
+/docs/                                @Micka420-collab
+/README.md                            @Micka420-collab
+/CHANGELOG.md                         @Micka420-collab

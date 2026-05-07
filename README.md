@@ -2,24 +2,40 @@
 
 # Jarvis 3.0
 
-**Assistant domotique auto-hébergé pour réseau local.**
-Voix, vision, mémoire, IoT et sécurité réseau — sur ton serveur, sous ton contrôle.
+**L'assistant domotique qui fait des choses.**
+Voix, vision, mémoire, IoT et sécurité réseau — 100% auto-hébergé, sous ton contrôle.
 
-[![Status](https://img.shields.io/badge/status-active-22c55e?style=flat-square)](#)
-[![License](https://img.shields.io/badge/license-MIT-3b82f6?style=flat-square)](#licence)
-[![Stack](https://img.shields.io/badge/stack-FastAPI%20%C2%B7%20React%20%C2%B7%20Three.js-1f2937?style=flat-square)](#stack-technique)
-[![Deploy](https://img.shields.io/badge/deploy-Compose%20%7C%20k3s%20%7C%20Pi%20ARM64-2563eb?style=flat-square)](#plateformes-de-déploiement)
-[![PWA](https://img.shields.io/badge/PWA-installable-7c3aed?style=flat-square)](#mobile--pwa)
-[![Argus](https://img.shields.io/badge/integrates-Argus%20SOC-ef4444?style=flat-square)](https://github.com/Micka420-collab/Argus)
+[![CI](https://github.com/Micka420-collab/Jarvis3.0/actions/workflows/ci.yml/badge.svg)](https://github.com/Micka420-collab/Jarvis3.0/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/license-MIT-3b82f6?style=flat-square)](LICENSE)
+[![Stars](https://img.shields.io/github/stars/Micka420-collab/Jarvis3.0?style=flat-square&color=eab308)](https://github.com/Micka420-collab/Jarvis3.0/stargazers)
+[![Issues](https://img.shields.io/github/issues/Micka420-collab/Jarvis3.0?style=flat-square)](https://github.com/Micka420-collab/Jarvis3.0/issues)
+[![Discussions](https://img.shields.io/github/discussions/Micka420-collab/Jarvis3.0?style=flat-square&color=22c55e)](https://github.com/Micka420-collab/Jarvis3.0/discussions)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-7c3aed?style=flat-square)](.github/CONTRIBUTING.md)
+
+</div>
+
+## ⚡ Installation en 30 secondes
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Micka420-collab/Jarvis3.0/main/install-ubuntu.sh | bash
+```
+
+> Sur **Ubuntu / Debian** : auto-installe Docker, génère les secrets, lance le wizard interactif qui te connecte LLM, Home Assistant, Zigbee, agents externes, voix-print.
+>
+> Sur **macOS / autres distros** (Docker déjà installé) :
+> ```bash
+> curl -fsSL https://raw.githubusercontent.com/Micka420-collab/Jarvis3.0/main/install.sh | bash
+> ```
+
+Une fois fini : ouvre **`https://jarvis.local`** ou la console admin **`https://jarvis.local/admin`**.
+
+<div align="center">
 
 [Fonctionnalités](#fonctionnalités) ·
 [Architecture](#architecture) ·
-[Installation](#installation) ·
-[Stack](#stack-technique) ·
-[Phases](#phases-de-livraison) ·
-[Plateformes](#plateformes-de-déploiement) ·
-[Sécurité](#sécurité) ·
-[Documentation](docs/)
+[Documentation](docs/) ·
+[Contribuer](.github/CONTRIBUTING.md) ·
+[Discussions](https://github.com/Micka420-collab/Jarvis3.0/discussions)
 
 </div>
 
@@ -341,10 +357,29 @@ Détail du modèle voix-print : [`docs/voiceprint.md`](docs/voiceprint.md).
 
 ---
 
+## Contribuer
+
+**Toutes les contributions sont bienvenues** — bugs, features, doc, traductions, skills, dashboards Grafana, etc.
+
+| Comment ? | Où ? |
+|---|---|
+| 💬 Question / discussion | [GitHub Discussions](https://github.com/Micka420-collab/Jarvis3.0/discussions) |
+| 🐛 Bug | [Bug report](https://github.com/Micka420-collab/Jarvis3.0/issues/new?template=bug_report.yml) |
+| 💡 Feature | [Feature request](https://github.com/Micka420-collab/Jarvis3.0/issues/new?template=feature_request.yml) |
+| 📦 Partager un skill | [Skill share](https://github.com/Micka420-collab/Jarvis3.0/issues/new?template=skill_share.yml) |
+| 🛡 Vulnérabilité | [Security advisory](https://github.com/Micka420-collab/Jarvis3.0/security/advisories/new) |
+| 🔧 Code | Fork → PR sur `main`, voir [`CONTRIBUTING.md`](.github/CONTRIBUTING.md) |
+
+**Première contribution ?** Cherche le label [`good first issue`](https://github.com/Micka420-collab/Jarvis3.0/issues?q=label%3A%22good+first+issue%22) ou [`help wanted`](https://github.com/Micka420-collab/Jarvis3.0/issues?q=label%3A%22help+wanted%22).
+
+Lis [`CODE_OF_CONDUCT.md`](.github/CODE_OF_CONDUCT.md) avant de participer.
+
 ## Licence
 
 MIT — voir [LICENSE](LICENSE).
 Inspiré par J.A.R.V.I.S. (Iron Man, Marvel) à des fins purement personnelles et techniques.
+
+Mainteneur : **Micka Delcato** ([@Micka420-collab](https://github.com/Micka420-collab)). Liste complète : [`AUTHORS.md`](AUTHORS.md).
 
 ---
 

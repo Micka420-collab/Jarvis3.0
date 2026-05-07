@@ -1,0 +1,110 @@
+name: 🐛 Bug report
+description: Reporte un comportement inattendu ou un crash
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Merci de prendre le temps de remplir ce rapport. Plus tu donnes de contexte, plus vite on pourra reproduire et corriger.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description du bug
+      description: Que se passe-t-il ? Que devait-il se passer ?
+      placeholder: |
+        Quand je dis "Jarvis allume le salon", Jarvis répond "OK" mais la lumière ne s'allume pas.
+        Attendu : la lumière light.salon devrait passer à ON.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Étapes de reproduction
+      description: Liste minimale pour reproduire.
+      placeholder: |
+        1. Je lance docker compose up -d
+        2. J'ouvre https://jarvis.local
+        3. Je dis "..."
+        4. Je vois ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: |
+        Coller les 100 dernières lignes du service concerné.
+        Commande : `docker compose logs <service> | tail -100`
+      render: shell
+    validations:
+      required: false
+
+  - type: input
+    id: version
+    attributes:
+      label: Version Jarvis
+      description: "Sortie de : `git rev-parse --short HEAD` ou tag de release"
+      placeholder: "v0.1.0 ou abc1234"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: install_method
+    attributes:
+      label: Méthode d'installation
+      options:
+        - install-ubuntu.sh (one-liner Ubuntu/Debian)
+        - install.sh (autres distros)
+        - manuelle (git clone + docker compose)
+        - Helm chart Kubernetes
+        - autre
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: OS / matériel
+      options:
+        - Ubuntu (bare-metal)
+        - Ubuntu sur Proxmox VM
+        - Debian
+        - Raspberry Pi 4
+        - Raspberry Pi 5
+        - WSL2 (Windows)
+        - macOS
+        - Kubernetes (k3s, etc.)
+        - autre
+    validations:
+      required: true
+
+  - type: input
+    id: docker_version
+    attributes:
+      label: Version Docker
+      description: "Sortie de : `docker --version`"
+      placeholder: "Docker version 27.3.1"
+
+  - type: textarea
+    id: env
+    attributes:
+      label: Configuration
+      description: |
+        Variables d'env pertinentes (anonymise les secrets ! Pas de tokens).
+        Exemple : LLM_PROVIDER, modèles utilisés, providers IoT activés.
+      render: shell
+
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Vérifications
+      options:
+        - label: J'ai cherché dans les issues existantes (ouvertes ET fermées) avant d'ouvrir celle-ci
+          required: true
+        - label: J'ai lu la doc concernée dans `docs/`
+          required: true
+        - label: Je n'ai pas inclus de secret / token / mot de passe
+          required: true

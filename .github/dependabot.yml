@@ -1,0 +1,76 @@
+version: 2
+updates:
+  # Python deps de chaque service
+  - package-ecosystem: pip
+    directory: /services/gateway
+    schedule: { interval: weekly }
+    open-pull-requests-limit: 5
+    labels: [dependencies, python]
+    groups:
+      python-deps:
+        patterns: ["*"]
+
+  - package-ecosystem: pip
+    directory: /services/orchestrator
+    schedule: { interval: weekly }
+    labels: [dependencies, python]
+    groups: { python-deps: { patterns: ["*"] } }
+
+  - package-ecosystem: pip
+    directory: /services/voice
+    schedule: { interval: weekly }
+    labels: [dependencies, python]
+    groups: { python-deps: { patterns: ["*"] } }
+
+  - package-ecosystem: pip
+    directory: /services/llm
+    schedule: { interval: weekly }
+    labels: [dependencies, python]
+    groups: { python-deps: { patterns: ["*"] } }
+
+  - package-ecosystem: pip
+    directory: /services/memory
+    schedule: { interval: weekly }
+    labels: [dependencies, python]
+    groups: { python-deps: { patterns: ["*"] } }
+
+  - package-ecosystem: pip
+    directory: /services/iot
+    schedule: { interval: weekly }
+    labels: [dependencies, python]
+    groups: { python-deps: { patterns: ["*"] } }
+
+  - package-ecosystem: pip
+    directory: /services/security
+    schedule: { interval: weekly }
+    labels: [dependencies, python]
+    groups: { python-deps: { patterns: ["*"] } }
+
+  - package-ecosystem: pip
+    directory: /services/agents
+    schedule: { interval: weekly }
+    labels: [dependencies, python]
+    groups: { python-deps: { patterns: ["*"] } }
+
+  # Frontend npm
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule: { interval: weekly }
+    open-pull-requests-limit: 5
+    labels: [dependencies, frontend]
+    groups:
+      npm-deps:
+        patterns: ["*"]
+    versioning-strategy: increase
+
+  # GitHub Actions
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: { interval: weekly }
+    labels: [dependencies, ci]
+
+  # Docker images dans les Dockerfiles
+  - package-ecosystem: docker
+    directory: /services/gateway
+    schedule: { interval: monthly }
+    labels: [dependencies, docker]
