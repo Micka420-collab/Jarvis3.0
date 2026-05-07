@@ -54,3 +54,4 @@ frigate-media/
 # Logs
 logs/
 *.log
+*.tsbuildinfo
