@@ -1,0 +1,65 @@
+name: 💡 Feature request
+description: Propose une nouvelle fonctionnalité ou une amélioration
+labels: ["enhancement", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Merci pour ton idée ! Pour les discussions ouvertes et brainstorm, préfère
+        [Discussions → Ideas](https://github.com/Micka420-collab/Jarvis3.0/discussions/categories/ideas).
+        Ouvre une issue ici si tu as une proposition concrète.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problème à résoudre
+      description: Quel besoin / friction motive cette feature ?
+      placeholder: |
+        Aujourd'hui, je ne peux pas demander à Jarvis de me lire mes derniers mails.
+        Je voudrais un skill "gmail" qui s'intègre avec OAuth.
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Solution proposée
+      description: Comment imagines-tu la feature ? UX, API, config ?
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considérées
+      description: D'autres approches que tu as envisagées ?
+
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Périmètre
+      multiple: true
+      options:
+        - voix (STT, TTS, voiceprint)
+        - LLM (providers, prompting)
+        - mémoire (Qdrant, RAG)
+        - IoT (HA, Zigbee, Z-Wave, MQTT)
+        - sécurité (Argus, AASIST, voiceprint)
+        - vision (Frigate, faces, deepfake)
+        - agents (Hermes, OpenClaw, MCP)
+        - admin UI
+        - infrastructure (Docker, k8s, Helm)
+        - documentation
+        - autre
+
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Vérifications
+      options:
+        - label: J'ai cherché dans les issues existantes
+          required: true
+        - label: J'ai lu la roadmap dans le README
+          required: true
+        - label: Je suis prêt(e) à aider à l'implémentation (au moins en testant)
+          required: false

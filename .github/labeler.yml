@@ -1,0 +1,71 @@
+# Auto-labels appliqués selon les chemins modifiés.
+# Doc : https://github.com/actions/labeler
+
+documentation:
+  - changed-files:
+      - any-glob-to-any-file: ["docs/**", "**/*.md"]
+
+ci:
+  - changed-files:
+      - any-glob-to-any-file: [".github/**", "Makefile", "**/Dockerfile", "docker-compose*.yml"]
+
+frontend:
+  - changed-files:
+      - any-glob-to-any-file: ["frontend/**"]
+
+backend:
+  - changed-files:
+      - any-glob-to-any-file: ["services/**/*.py"]
+
+helm:
+  - changed-files:
+      - any-glob-to-any-file: ["helm/**"]
+
+monitoring:
+  - changed-files:
+      - any-glob-to-any-file: ["monitoring/**", "docker-compose.monitoring.yml"]
+
+security:
+  - changed-files:
+      - any-glob-to-any-file: [
+          "services/security/**",
+          "services/voice/app/voiceprint*.py",
+          "services/voice/app/aasist*.py",
+          "infra/fail2ban/**",
+        ]
+
+iot:
+  - changed-files:
+      - any-glob-to-any-file: ["services/iot/**"]
+
+voice:
+  - changed-files:
+      - any-glob-to-any-file: ["services/voice/**"]
+
+llm:
+  - changed-files:
+      - any-glob-to-any-file: ["services/llm/**"]
+
+memory:
+  - changed-files:
+      - any-glob-to-any-file: ["services/memory/**"]
+
+agents:
+  - changed-files:
+      - any-glob-to-any-file: ["services/agents/**", "services/orchestrator/app/skills/builtin/agents_skill.py"]
+
+vision:
+  - changed-files:
+      - any-glob-to-any-file: ["services/vision/**"]
+
+tests:
+  - changed-files:
+      - any-glob-to-any-file: ["tests/**"]
+
+skills:
+  - changed-files:
+      - any-glob-to-any-file: ["services/orchestrator/app/skills/**"]
+
+install:
+  - changed-files:
+      - any-glob-to-any-file: ["install*.sh", "scripts/wizard.sh", "scripts/install*.sh"]

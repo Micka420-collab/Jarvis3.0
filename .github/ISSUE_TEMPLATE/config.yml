@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 Question / discussion
+    url: https://github.com/Micka420-collab/Jarvis3.0/discussions
+    about: Pour les questions générales et les discussions, utilise les Discussions.
+  - name: 🛡 Vulnérabilité de sécurité
+    url: https://github.com/Micka420-collab/Jarvis3.0/security/advisories/new
+    about: Reporte les failles de sécurité en privé via GitHub Security Advisory.
+  - name: 📚 Documentation
+    url: https://github.com/Micka420-collab/Jarvis3.0/tree/main/docs
+    about: Lis la doc complète avant d'ouvrir une issue.

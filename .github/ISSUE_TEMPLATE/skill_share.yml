@@ -1,0 +1,46 @@
+name: 📦 Partage de skill
+description: Tu as créé un skill / plugin que tu veux partager avec la communauté
+labels: ["skill", "showcase"]
+body:
+  - type: input
+    id: skill_name
+    attributes:
+      label: Nom du skill
+      placeholder: "spotify-control"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: Que fait ton skill ? Quels tools expose-t-il ?
+    validations:
+      required: true
+
+  - type: input
+    id: repo
+    attributes:
+      label: URL du dépôt / gist
+      placeholder: "https://github.com/<user>/<repo>"
+    validations:
+      required: true
+
+  - type: textarea
+    id: usage
+    attributes:
+      label: Exemple d'usage
+      description: Une commande vocale type que ton skill gère
+      placeholder: '"Jarvis, mets de la chill house" → spotify_play("chill house")'
+
+  - type: dropdown
+    id: license
+    attributes:
+      label: Licence
+      options:
+        - MIT
+        - Apache-2.0
+        - GPL-3.0
+        - autre (préciser)
+    validations:
+      required: true

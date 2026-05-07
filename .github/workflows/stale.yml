@@ -1,0 +1,37 @@
+name: Mark stale issues and PRs
+
+on:
+  schedule:
+    - cron: "0 4 * * *"  # tous les jours à 04:00 UTC
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  stale:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/stale@v9
+        with:
+          days-before-issue-stale: 60
+          days-before-issue-close: 14
+          stale-issue-label: stale
+          stale-issue-message: |
+            Cette issue n'a pas eu d'activité depuis 60 jours. Elle sera fermée
+            dans 14 jours sans nouveau commentaire. Si elle est toujours d'actualité,
+            ajoute un commentaire pour la garder ouverte.
+          close-issue-message: |
+            Fermée automatiquement faute d'activité. N'hésite pas à la rouvrir
+            si tu as plus d'infos.
+          days-before-pr-stale: 30
+          days-before-pr-close: 14
+          stale-pr-label: stale
+          stale-pr-message: |
+            Cette PR n'a pas eu d'activité depuis 30 jours. Elle sera fermée dans
+            14 jours sans update. Si tu travailles encore dessus, push un commit
+            ou commente.
+          exempt-issue-labels: "pinned,security,roadmap,help-wanted,good-first-issue"
+          exempt-pr-labels: "pinned,security,wip,blocked"
+          operations-per-run: 30

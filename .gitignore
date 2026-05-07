@@ -18,6 +18,7 @@ dist/
 .vite/
 .eslintcache
 *.log
+*.tsbuildinfo
 
 # Models (lourd, téléchargés via scripts/download_models.sh)
 models/whisper/*
