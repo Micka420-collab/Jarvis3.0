@@ -68,14 +68,53 @@ CREATE TABLE IF NOT EXISTS devices (
 -- Faits long-terme (résumé, accessibles aussi via Qdrant pour la recherche)
 -- ---------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS facts (
-    id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id     UUID REFERENCES users(id) ON DELETE SET NULL,
-    text        TEXT NOT NULL,
-    tags        TEXT[] DEFAULT '{}',
-    created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id          UUID REFERENCES users(id) ON DELETE SET NULL,
+    text             TEXT NOT NULL,
+    tags             TEXT[] DEFAULT '{}',
+    -- Catégorie : preference (j'aime/je n'aime pas), fact (info objective),
+    -- event (passé daté), conversation (extrait dialogue), skill_observation
+    -- (apprentissage de routine), other.
+    kind             TEXT NOT NULL DEFAULT 'fact',
+    -- Importance subjective 0..1, pondère le scoring (par défaut 0.5)
+    importance       REAL NOT NULL DEFAULT 0.5,
+    -- Recherche full-text en français (BM25 via to_tsvector) pour hybrid search
+    tsv              tsvector GENERATED ALWAYS AS (to_tsvector('french', coalesce(text, ''))) STORED,
+    -- Compteur d'utilisation : un fact rappelé souvent est plus pertinent
+    recall_count     INT NOT NULL DEFAULT 0,
+    last_recalled_at TIMESTAMPTZ,
+    -- Source : qui/quoi a inséré ce fait (orchestrator, user, learning_service...)
+    source           TEXT,
+    created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
-CREATE INDEX IF NOT EXISTS facts_user_id_idx ON facts(user_id);
-CREATE INDEX IF NOT EXISTS facts_tags_idx ON facts USING GIN(tags);
+CREATE INDEX IF NOT EXISTS facts_user_id_idx     ON facts(user_id);
+CREATE INDEX IF NOT EXISTS facts_tags_idx        ON facts USING GIN(tags);
+CREATE INDEX IF NOT EXISTS facts_kind_idx        ON facts(kind);
+CREATE INDEX IF NOT EXISTS facts_tsv_idx         ON facts USING GIN(tsv);
+CREATE INDEX IF NOT EXISTS facts_recall_idx      ON facts(recall_count DESC, last_recalled_at DESC);
+
+-- Trigger : maj automatique de updated_at sur tout UPDATE
+CREATE OR REPLACE FUNCTION set_updated_at()
+RETURNS TRIGGER AS $$ BEGIN NEW.updated_at = NOW(); RETURN NEW; END; $$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS facts_set_updated_at ON facts;
+CREATE TRIGGER facts_set_updated_at BEFORE UPDATE ON facts
+  FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+-- ALTER pour les bases existantes (idempotent)
+ALTER TABLE facts ADD COLUMN IF NOT EXISTS kind             TEXT NOT NULL DEFAULT 'fact';
+ALTER TABLE facts ADD COLUMN IF NOT EXISTS importance       REAL NOT NULL DEFAULT 0.5;
+ALTER TABLE facts ADD COLUMN IF NOT EXISTS recall_count     INT  NOT NULL DEFAULT 0;
+ALTER TABLE facts ADD COLUMN IF NOT EXISTS last_recalled_at TIMESTAMPTZ;
+ALTER TABLE facts ADD COLUMN IF NOT EXISTS source           TEXT;
+ALTER TABLE facts ADD COLUMN IF NOT EXISTS updated_at       TIMESTAMPTZ NOT NULL DEFAULT NOW();
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                   WHERE table_name='facts' AND column_name='tsv') THEN
+        ALTER TABLE facts ADD COLUMN tsv tsvector
+              GENERATED ALWAYS AS (to_tsvector('french', coalesce(text, ''))) STORED;
+    END IF;
+END $$;
 
 -- ---------------------------------------------------------------------------
 -- Routines (apprises automatiquement ou créées manuellement)
